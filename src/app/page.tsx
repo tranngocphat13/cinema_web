@@ -1,11 +1,14 @@
-import { Button } from "@/components/ui/button";
-import Image from "next/image";
+import MainLayout from "@/components/forms/MainLayout";
+import Navbar from "@/components/ui/navbar";
+import Footer from "@/components/ui/footer";
+import React from "react";
 
 export default function Home() {
   return (
-    <div className="font-sans grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20">
-      <Button variant={'outline'}>Get Started</Button>
-      <h1>Demo Test</h1>
+    <div>
+      <Navbar />
+      <MainLayout />
+      <Footer />
     </div>
   );
 }
