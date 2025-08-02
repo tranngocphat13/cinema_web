@@ -9,25 +9,41 @@ export default function RegisterForm() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
 
-  const handleSubmit = async(e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-
+    setError("");
+    setSuccess("");
     if (!name || !email || !password) {
       setError("Vui lòng điền đầy đủ thông tin");
       return;
     }
 
     try {
-      await fetch('/api/register', {
-        method: 'POST',
+      const res = await fetch("/api/register", {
+        method: "POST",
         headers: {
-          "Content-Type": "application/json"
+          "Content-Type": "application/json",
         },
-        body: JSON.stringify({ name, email, password })
-      })
+        body: JSON.stringify({ name, email, password }),
+      });
+
+      const data = await res.json();
+
+      if (res.ok) {
+        setSuccess("Đăng ký thành công!");
+        setName("");
+        setEmail("");
+        setPassword("");
+
+        setTimeout(() => setSuccess(""), 3000);
+      } else {
+        setError(data.message || "Đăng ký thất bại");
+      }
     } catch (error) {
-      
+      setError("Có lỗi xảy ra, vui lòng thử lại");
+      console.log("Error during registration:", error);
     }
   };
 
@@ -64,6 +80,11 @@ export default function RegisterForm() {
             </div>
           )}
 
+          {success && (
+            <div className="bg-green-500 text-white w-fit text-sm py-1 px-3 rounded-md mt-2">
+              {success}
+            </div>
+          )}
           <Link href="/" className="text-sm text-blue-500 text-right">
             Đã có sẵn tài khoản <span className="underline">Đăng nhập</span>
           </Link>
