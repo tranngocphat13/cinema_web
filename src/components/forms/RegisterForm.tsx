@@ -10,7 +10,7 @@ export default function RegisterForm() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async(e: React.FormEvent) => {
     e.preventDefault();
 
     if (!name || !email || !password) {
@@ -18,6 +18,17 @@ export default function RegisterForm() {
       return;
     }
 
+    try {
+      await fetch('/api/register', {
+        method: 'POST',
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({ name, email, password })
+      })
+    } catch (error) {
+      
+    }
   };
 
   return (
