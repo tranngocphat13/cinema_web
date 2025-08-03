@@ -21,7 +21,7 @@ export const authOptions = {
         const isValid = await bcrypt.compare(credentials.password, user.password);
         if (!isValid) throw new Error("Sai mật khẩu");
 
-        return { id: user._id, name: user.username, email: user.email };
+        return { id: user._id, name: user.name, email: user.email };
       },
     }),
   ],
