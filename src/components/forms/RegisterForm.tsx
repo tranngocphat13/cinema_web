@@ -3,6 +3,7 @@
 import Link from "next/link";
 import React from "react";
 import { useState } from "react";
+import {useRouter} from "next/navigation"
 
 export default function RegisterForm() {
   const [name, setName] = useState("");
@@ -10,6 +11,8 @@ export default function RegisterForm() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
+
+  const router = useRouter();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -21,6 +24,21 @@ export default function RegisterForm() {
     }
 
     try {
+      const resUserExists = await fetch("/api/userExists", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({email})
+      });
+
+      const {user} = await resUserExists.json();
+
+      if(user) {
+        setError("Tài khoản này đã tồn tại");
+        return;
+      }
+
       const res = await fetch("/api/register", {
         method: "POST",
         headers: {
@@ -38,6 +56,8 @@ export default function RegisterForm() {
         setPassword("");
 
         setTimeout(() => setSuccess(""), 3000);
+
+        router.push("/login")
       } else {
         setError(data.message || "Đăng ký thất bại");
       }
@@ -85,7 +105,7 @@ export default function RegisterForm() {
               {success}
             </div>
           )}
-          <Link href="/" className="text-sm text-blue-500 text-right">
+          <Link href="/login" className="text-sm text-blue-500 text-right">
             Đã có sẵn tài khoản <span className="underline">Đăng nhập</span>
           </Link>
         </form>
