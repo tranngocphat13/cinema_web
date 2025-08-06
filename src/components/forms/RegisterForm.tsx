@@ -50,14 +50,7 @@ export default function RegisterForm() {
       const data = await res.json();
 
       if (res.ok) {
-        setSuccess("Đăng ký thành công!");
-        setName("");
-        setEmail("");
-        setPassword("");
-
-        setTimeout(() => setSuccess(""), 3000);
-
-        router.push("/login")
+        router.push("/verify");
       } else {
         setError(data.message || "Đăng ký thất bại");
       }

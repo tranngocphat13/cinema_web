@@ -1,7 +1,6 @@
 "use client";
-import React from "react";
+import React, { useState } from "react";
 import Link from "next/link";
-import { useState } from "react";
 import { signIn } from "next-auth/react";
 import { useRouter } from "next/navigation";
 
@@ -15,13 +14,25 @@ export default function LoginForm() {
     e.preventDefault();
     setError("");
 
-    const res = await signIn("credentials", { redirect: false, email, password });
+    const res = await signIn("credentials", {
+      redirect: false,
+      email,
+      password,
+    });
 
     if (res?.error) {
       setError(res.error || "Đăng nhập thất bại");
     } else {
-      // Chuyển về trang chủ và thêm query login=success
-      router.push("/?login=success");
+      // Lấy session để biết role
+      const sessionRes = await fetch("/api/auth/session");
+      const session = await sessionRes.json();
+
+      // Redirect theo role
+      if (session?.user?.role === "Admin") {
+        router.push("/admin");
+      } else {
+        router.push("/");
+      }
     }
   };
 
@@ -56,6 +67,16 @@ export default function LoginForm() {
           <Link href="/register" className="text-sm text-blue-500 text-right">
             Quên mật khẩu? <span className="underline">Đăng ký</span>
           </Link>
+
+          <button
+            type="button"
+            onClick={() =>
+              signIn("google", { callbackUrl: "/" }) // Google mặc định về dashboard
+            }
+            className="bg-red-500 text-white py-2 px-4 rounded font-bold cursor-pointer"
+          >
+            Đăng nhập với Google
+          </button>
         </form>
       </div>
     </div>
