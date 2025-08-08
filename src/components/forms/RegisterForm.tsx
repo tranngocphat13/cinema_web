@@ -1,108 +1,109 @@
 "use client";
 
-import Link from "next/link";
-import React from "react";
-import { useState } from "react";
-import {useRouter} from "next/navigation"
+import React, { useState } from "react";
+import { useRouter } from "next/navigation";
 
 export default function RegisterForm() {
+  const router = useRouter();
+  const [step, setStep] = useState<"register" | "verify">("register");
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [otp, setOtp] = useState("");
+
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
 
-  const router = useRouter();
-
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError("");
-    setSuccess("");
+    setError(""); setSuccess("");
+
     if (!name || !email || !password) {
       setError("Vui lòng điền đầy đủ thông tin");
       return;
     }
 
-    try {
-      const resUserExists = await fetch("/api/userExists", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({email})
-      });
+    const res = await fetch("/api/register", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name, email, password }),
+    });
 
-      const {user} = await resUserExists.json();
+    const data = await res.json();
+    if (res.ok) {
+      setStep("verify");
+      setSuccess("Mã OTP đã gửi qua email.");
+    } else {
+      setError(data.message || "Đăng ký thất bại");
+    }
+  };
 
-      if(user) {
-        setError("Tài khoản này đã tồn tại");
-        return;
-      }
+  const handleVerify = async () => {
+    setError(""); setSuccess("");
 
-      const res = await fetch("/api/register", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ name, email, password }),
-      });
+    const res = await fetch("/api/verify", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email, code: otp }),
+    });
 
-      const data = await res.json();
+    const data = await res.json();
+    if (res.ok) {
+      setSuccess("Xác thực thành công!");
+      setTimeout(() => {
+        router.push("/login"); // <-- tự động chuyển sang trang login sau 2 giây
+      }, 2000);
+    } else {
+      setError(data.message || "Lỗi xác thực");
+    }
+  };
 
-      if (res.ok) {
-        router.push("/verify");
-      } else {
-        setError(data.message || "Đăng ký thất bại");
-      }
-    } catch (error) {
-      setError("Có lỗi xảy ra, vui lòng thử lại");
-      console.log("Error during registration:", error);
+  const handleResendOTP = async () => {
+    setError(""); setSuccess("");
+    const res = await fetch("/api/resend-otp", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email }),
+    });
+
+    const data = await res.json();
+    if (res.ok) {
+      setSuccess("Đã gửi lại mã OTP.");
+    } else {
+      setError(data.message || "Gửi lại OTP thất bại");
     }
   };
 
   return (
-    <div className="grid place-items-center h-screen">
-      <div className="shadow-lg p-5 rounded-lg border-t-4 border-green-400">
-        <h1 className="text-2xl font-bold my-4 uppercase text-center">
-          Đăng kí tài khoản
-        </h1>
+    <div className="max-w-md mx-auto mt-12 p-6 rounded-lg shadow-lg border-t-4 border-green-500">
+      <h2 className="text-2xl font-bold text-center mb-6">Đăng ký</h2>
 
-        <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-          <input
-            onChange={(e) => setName(e.target.value)}
-            type="text"
-            placeholder="Họ và tên"
-          />
-          <input
-            onChange={(e) => setEmail(e.target.value)}
-            type="text"
-            placeholder="Email"
-          />
-          <input
-            onChange={(e) => setPassword(e.target.value)}
-            type="password"
-            placeholder="Mật khẩu"
-          />
-          <button className="bg-green-500 text-white py-2 px-4 rounded cursor-pointer font-bold">
-            Đăng kí
-          </button>
-
-          {error && (
-            <div className="bg-red-500 text-white w-fit text-sm py-1 px-3 rounded-md mt-2">
-              {error}
-            </div>
-          )}
-
-          {success && (
-            <div className="bg-green-500 text-white w-fit text-sm py-1 px-3 rounded-md mt-2">
-              {success}
-            </div>
-          )}
-          <Link href="/login" className="text-sm text-blue-500 text-right">
-            Đã có sẵn tài khoản <span className="underline">Đăng nhập</span>
-          </Link>
+      {step === "register" && (
+        <form onSubmit={handleRegister} className="flex flex-col gap-4">
+          <input type="text" placeholder="Họ và tên" value={name} onChange={(e) => setName(e.target.value)} />
+          <input type="email" placeholder="Email" value={email} onChange={(e) => setEmail(e.target.value)} />
+          <input type="password" placeholder="Mật khẩu" value={password} onChange={(e) => setPassword(e.target.value)} />
+          <button className="bg-green-500 text-white py-2 rounded font-bold">Đăng ký</button>
         </form>
-      </div>
+      )}
+
+      {step === "verify" && (
+        <div className="flex flex-col gap-4">
+          <input type="text" placeholder="Nhập mã OTP" value={otp} onChange={(e) => setOtp(e.target.value)} />
+          <button onClick={handleVerify} className="bg-blue-500 text-white py-2 rounded font-bold">
+            Xác thực mã
+          </button>
+          <button onClick={handleResendOTP} className="text-sm text-gray-600 underline">
+            Gửi lại mã OTP
+          </button>
+        </div>
+      )}
+
+      {(error || success) && (
+        <div className={`mt-4 p-2 rounded ${error ? "bg-red-500" : "bg-green-500"} text-white`}>
+          {error || success}
+        </div>
+      )}
     </div>
   );
 }
