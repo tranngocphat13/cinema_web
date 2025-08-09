@@ -2,7 +2,7 @@
 
 import { NextResponse } from "next/server";
 import { connectDB } from "@/lib/mongodb";
-import User from "@/app/models/user";
+import User from "@/models/user";
 import nodemailer from "nodemailer";
 
 export async function POST(req) {

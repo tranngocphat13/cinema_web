@@ -1,7 +1,9 @@
-import React from 'react'
-
-export default function AdminDashboard() {
+// app/admin/page.tsx
+export default function AdminHome() {
   return (
-    <div>Admin Dashboard</div>
-  )
+    <div>
+      <h1 className="text-3xl font-bold mb-4">📊 Dashboard Admin</h1>
+      <p>Chào mừng quản trị viên — Thống kê tóm tắt sẽ hiển thị ở đây.</p>
+    </div>
+  );
 }

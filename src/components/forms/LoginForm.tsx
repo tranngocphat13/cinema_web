@@ -36,6 +36,12 @@ export default function LoginForm() {
     }
   };
 
+  const handleGoogleLogin = async () => {
+    await signIn("google", {
+      callbackUrl: "/auth-redirect",
+    });
+  };
+
   return (
     <div className="grid place-items-center h-screen">
       <div className="shadow-lg p-5 rounded-lg border-t-4 border-green-400">
@@ -70,9 +76,7 @@ export default function LoginForm() {
 
           <button
             type="button"
-            onClick={() =>
-              signIn("google", { callbackUrl: "/" }) // Google mặc định về dashboard
-            }
+            onClick={handleGoogleLogin}
             className="bg-red-500 text-white py-2 px-4 rounded font-bold cursor-pointer"
           >
             Đăng nhập với Google
