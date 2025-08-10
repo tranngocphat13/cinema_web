@@ -1,73 +1,59 @@
 "use client";
 import Link from "next/link";
-import { useState, useEffect, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { Menu, X } from "lucide-react";
 import { useSession, signOut } from "next-auth/react";
 
 export default function Navbar() {
-  const [isOpen, setIsOpen] = useState(false);
-  const [dropdownOpen, setDropdownOpen] = useState(false);
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [userMenuOpen, setUserMenuOpen] = useState(false);
   const { data: session, status } = useSession();
-  const dropdownRef = useRef<HTMLDivElement>(null);
+  const userMenuRef = useRef<HTMLDivElement>(null);
 
   const userName = session?.user?.name || "Người dùng";
 
-  // Đóng dropdown khi click ra ngoài
+  // Close user menu when clicking outside
   useEffect(() => {
-    function handleClickOutside(event: MouseEvent) {
-      if (
-        dropdownRef.current &&
-        !dropdownRef.current.contains(event.target as Node)
-      ) {
-        setDropdownOpen(false);
+    const handleClickOutside = (event: MouseEvent) => {
+      if (userMenuRef.current && !userMenuRef.current.contains(event.target as Node)) {
+        setUserMenuOpen(false);
       }
-    }
+    };
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
   return (
-    <nav className="bg-white shadow-md">
-      <div className="max-w-6xl mx-auto px-6 py-4 flex justify-between items-center">
+    <nav className="bg-white shadow-md sticky top-0 z-50">
+      <div className="max-w-7xl mx-auto px-6 py-4 flex justify-between items-center">
         {/* Logo */}
         <Link href="/" className="text-2xl font-bold text-green-600">
           MyCinema
         </Link>
 
-        {/* Menu - Desktop */}
-        <div className="hidden md:flex space-x-6">
-          <Link href="/" className="hover:text-green-500">
-            Trang chủ
-          </Link>
-          <Link href="/movies" className="hover:text-green-500">
-            Phim
-          </Link>
-          <Link href="/schedule" className="hover:text-green-500">
-            Lịch chiếu
-          </Link>
-          <Link href="/booking" className="hover:text-green-500">
-            Đặt vé
-          </Link>
+        {/* Menu Desktop */}
+        <div className="hidden md:flex items-center space-x-6">
+          <Link href="/" className="hover:text-green-500">Trang chủ</Link>
+          <Link href="/movies" className="hover:text-green-500">Phim</Link>
+          <Link href="/schedule" className="hover:text-green-500">Lịch chiếu</Link>
+          <Link href="/booking" className="hover:text-green-500">Đặt vé</Link>
         </div>
 
-        {/* Auth / User - Desktop */}
-        <div className="hidden md:flex space-x-4 items-center">
+        {/* User Menu Desktop */}
+        <div className="hidden md:flex items-center space-x-4">
           {status === "loading" ? (
             <p>Đang tải...</p>
           ) : session ? (
-            <div className="relative" ref={dropdownRef}>
+            <div className="relative" ref={userMenuRef}>
               <button
-                onClick={() => setDropdownOpen(!dropdownOpen)}
-                className="font-semibold text-gray-700 px-4 py-2 border rounded hover:bg-gray-100"
+                onClick={() => setUserMenuOpen((prev) => !prev)}
+                className="font-semibold text-gray-700 px-4 py-2 border rounded-lg hover:bg-gray-100 transition-colors"
               >
                 Xin chào, {userName}
               </button>
-              {dropdownOpen && (
-                <div className="absolute right-0 top-full bg-white border rounded shadow-md w-40 mt-2 z-50">
-                  <Link
-                    href="/profile"
-                    className="block px-4 py-2 hover:bg-gray-100"
-                  >
+              {userMenuOpen && (
+                <div className="absolute right-0 mt-2 w-48 bg-white border rounded-lg shadow-lg">
+                  <Link href="/profile" className="block px-4 py-2 hover:bg-gray-100">
                     Tài khoản
                   </Link>
                   <button
@@ -83,13 +69,13 @@ export default function Navbar() {
             <>
               <Link
                 href="/login"
-                className="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600"
+                className="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors"
               >
                 Đăng nhập
               </Link>
               <Link
                 href="/register"
-                className="px-4 py-2 border rounded hover:bg-gray-100"
+                className="px-4 py-2 border rounded-lg hover:bg-gray-100 transition-colors"
               >
                 Đăng ký
               </Link>
@@ -97,52 +83,42 @@ export default function Navbar() {
           )}
         </div>
 
-        {/* Hamburger - Mobile */}
+        {/* Hamburger Mobile */}
         <button
-          onClick={() => setIsOpen(!isOpen)}
+          onClick={() => setIsMenuOpen((prev) => !prev)}
           className="md:hidden text-gray-700"
         >
-          {isOpen ? <X size={28} /> : <Menu size={28} />}
+          {isMenuOpen ? <X size={28} /> : <Menu size={28} />}
         </button>
       </div>
 
-      {/* Mobile menu */}
-      {isOpen && (
-        <div className="md:hidden bg-white border-t">
+      {/* Mobile Menu */}
+      {isMenuOpen && (
+        <div className="md:hidden bg-white border-t shadow-lg">
           <div className="flex flex-col space-y-4 p-4">
-            <Link href="/" className="hover:text-green-500">
-              Trang chủ
-            </Link>
-            <Link href="/movies" className="hover:text-green-500">
-              Phim
-            </Link>
-            <Link href="/schedule" className="hover:text-green-500">
-              Lịch chiếu
-            </Link>
-            <Link href="/booking" className="hover:text-green-500">
-              Đặt vé
-            </Link>
+            <Link href="/" className="hover:text-green-500">Trang chủ</Link>
+            <Link href="/movies" className="hover:text-green-500">Phim</Link>
+            <Link href="/schedule" className="hover:text-green-500">Lịch chiếu</Link>
+            <Link href="/booking" className="hover:text-green-500">Đặt vé</Link>
 
             {session ? (
               <>
-                <span className="font-semibold text-gray-700">
-                  Xin chào, {userName}
-                </span>
+                <span className="font-semibold text-gray-700">Xin chào, {userName}</span>
                 <Link
                   href="/profile"
-                  className="px-4 py-2 border rounded text-center hover:bg-gray-100"
+                  className="px-4 py-2 border rounded-lg text-center hover:bg-gray-100"
                 >
                   Tài khoản
                 </Link>
                 <Link
                   href="/profile"
-                  className="px-4 py-2 border rounded text-center hover:bg-gray-100"
+                  className="px-4 py-2 border rounded-lg text-center hover:bg-gray-100"
                 >
                   Vé của tôi
                 </Link>
                 <button
                   onClick={() => signOut({ callbackUrl: "/" })}
-                  className="px-4 py-2 bg-red-500 text-white rounded text-center hover:bg-red-600"
+                  className="px-4 py-2 bg-red-500 text-white rounded-lg text-center hover:bg-red-600"
                 >
                   Đăng xuất
                 </button>
@@ -151,13 +127,13 @@ export default function Navbar() {
               <>
                 <Link
                   href="/login"
-                  className="px-4 py-2 bg-green-500 text-white rounded text-center hover:bg-green-600"
+                  className="px-4 py-2 bg-green-500 text-white rounded-lg text-center hover:bg-green-600"
                 >
                   Đăng nhập
                 </Link>
                 <Link
                   href="/register"
-                  className="px-4 py-2 border rounded text-center hover:bg-gray-100"
+                  className="px-4 py-2 border rounded-lg text-center hover:bg-gray-100"
                 >
                   Đăng ký
                 </Link>
