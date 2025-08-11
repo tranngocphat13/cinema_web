@@ -1,4 +1,4 @@
-import MovieSelection from "@/app/movieselect/MovieSection";
+import MovieSelection from "@/app/user/movieselect/MovieSection";
 import BannerSlider from "@/components/ui/bannersliders";
 
 
