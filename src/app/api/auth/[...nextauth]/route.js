@@ -47,7 +47,7 @@ export const authOptions = {
         if (!existingUser) {
           // Nếu user chưa tồn tại => tạo mới nhưng chưa xác thực
           existingUser = await User.create({
-            name: user.name || "No Name",
+            name: user.name,
             email: user.email,
             password: null,
             role: "Customer",
