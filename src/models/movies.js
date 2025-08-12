@@ -2,8 +2,9 @@ import mongoose from "mongoose";
 
 const movieSchema = new mongoose.Schema(
   {
+    tmdbId: { type: Number, unique: true }, // 🔹 Để tránh trùng lặp
     title: { type: String, required: true },
-    duration: { type: Number, required: true }, // phút
+    duration: { type: Number }, // phút
     country: { type: String },
     genres: [{ type: mongoose.Schema.Types.ObjectId, ref: "Genre" }],
     director: { type: String },

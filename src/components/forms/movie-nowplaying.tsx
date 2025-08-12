@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import dynamic from "next/dynamic";
 import { PlayCircle } from "lucide-react";
+import { Swiper, SwiperSlide } from "swiper/react";
 import "swiper/css";
 
 const ReactPlayer = dynamic(() => import("react-player"), { ssr: false });
@@ -16,7 +17,7 @@ interface Movie {
   ratingLabel?: string; // VD: T13, T16, K
 }
 
-export default function NowPlayingMovies() {
+export default function NowPlayingSlider() {
   const [movies, setMovies] = useState<Movie[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedTrailer, setSelectedTrailer] = useState<string | null>(null);
@@ -36,38 +37,22 @@ export default function NowPlayingMovies() {
     fetchMovies();
   }, []);
 
+  if (loading) return <p>Đang tải phim...</p>;
+
   return (
     <div className="p-6 max-w-[1200px] mx-auto">
-      <h1 className="text-3xl font-bold mb-6 text-green-500 uppercase">
-        🎬 Phim đang chiếu
+      <h1 className="text-3xl font-bold mb-6 text-green-500 uppercase text-center">
+        PHIM ĐANG CHIẾU
       </h1>
 
-      {/* Loading skeleton */}
-      {loading && (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-          {Array.from({ length: 6 }).map((_, i) => (
-            <div
-              key={i}
-              className="bg-gray-800 animate-pulse h-[420px] rounded-lg"
-            ></div>
-          ))}
-        </div>
-      )}
+      <Swiper spaceBetween={20} slidesPerView={4}>
+        {movies.map((movie) => (
+          <SwiperSlide key={movie._id}>
+            <MovieCard movie={movie} onWatchTrailer={setSelectedTrailer} />
+          </SwiperSlide>
+        ))}
+      </Swiper>
 
-      {/* Movie grid */}
-      {!loading && (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-          {movies.map((movie) => (
-            <MovieCard
-              key={movie._id}
-              movie={movie}
-              onWatchTrailer={(url) => setSelectedTrailer(url)}
-            />
-          ))}
-        </div>
-      )}
-
-      {/* Trailer Modal */}
       {selectedTrailer && (
         <div className="fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center z-50 p-4">
           <div className="w-full max-w-4xl bg-black rounded-lg overflow-hidden relative">
@@ -78,7 +63,7 @@ export default function NowPlayingMovies() {
               ✕
             </button>
             <ReactPlayer
-              // url={selectedTrailer}
+            //   url={selectedTrailer}
               controls
               playing
               width="100%"
@@ -99,37 +84,32 @@ function MovieCard({
   onWatchTrailer: (url: string) => void;
 }) {
   return (
-    <div className="bg-[#12192e] text-white rounded-lg overflow-hidden shadow-lg group flex flex-col">
-      {/* Poster */}
-      <div className="relative w-full pb-[150%] overflow-hidden">
+    <div className="bg-[#12192e] text-white rounded-lg overflow-hidden shadow-lg flex flex-col">
+      <div className="relative w-full pb-[150%] overflow-hidden rounded-lg">
         <img
           src={movie.posterUrl}
           alt={movie.title}
-          className="absolute inset-0 w-full h-full object-cover transition-transform group-hover:scale-105"
+          className="absolute inset-0 w-full h-full object-cover"
         />
         {movie.ratingLabel && (
-          <div className="absolute top-2 left-2 bg-orange-500 text-white font-bold text-xs px-2 py-1 rounded">
+          <div className="absolute top-2 left-2 bg-red-600 text-white font-bold text-xs px-2 py-1 rounded">
             {movie.ratingLabel}
           </div>
         )}
       </div>
 
-      {/* Title + Buttons */}
-      <div className="p-3 flex-1 flex flex-col justify-between">
-        <h2 className="text-sm font-bold uppercase line-clamp-2">
-          {movie.title}
-        </h2>
-
-        <div className="mt-3 flex gap-2">
+      <div className="p-2 flex flex-col gap-2">
+        <h3 className="text-sm font-semibold uppercase line-clamp-2">{movie.title}</h3>
+        <div className="flex gap-2">
           {movie.trailerUrl && (
             <button
               onClick={() => onWatchTrailer(movie.trailerUrl!)}
-              className="flex-1 flex items-center justify-center gap-1 border border-blue-400 hover:bg-blue-500 hover:text-white text-blue-400 text-sm py-2 rounded transition"
+              className="flex-1 flex items-center justify-center gap-1 border border-gray-400 hover:bg-gray-700 text-gray-300 text-xs py-1 rounded"
             >
               <PlayCircle className="w-4 h-4" /> Xem Trailer
             </button>
           )}
-          <button className="flex-1 bg-yellow-400 hover:bg-yellow-500 text-black font-semibold text-sm py-2 rounded transition cursor-pointer">
+          <button className="flex-1 bg-yellow-400 hover:bg-yellow-500 text-black font-semibold text-xs py-1 rounded">
             Đặt Vé
           </button>
         </div>

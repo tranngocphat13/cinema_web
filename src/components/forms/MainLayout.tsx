@@ -1,15 +1,13 @@
-import MovieSelection from "@/app/user/movieselect/MovieSection";
+import NowPlayingSlider from "@/components/forms/movie-nowplaying";
 import BannerSlider from "@/components/ui/bannersliders";
-
-
 
 export default function HomePage() {
   return (
     <div>
       {/* Banner */}
       <BannerSlider />
-
-      <MovieSelection />
+      {/* Now Playing Movies */}
+      <NowPlayingSlider />
     </div>
   );
 }
