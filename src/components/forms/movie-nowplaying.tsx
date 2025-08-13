@@ -4,7 +4,11 @@ import { useEffect, useState } from "react";
 import dynamic from "next/dynamic";
 import { PlayCircle } from "lucide-react";
 import { Swiper, SwiperSlide } from "swiper/react";
+import { Navigation } from "swiper/modules";
+import Image from "next/image";
+
 import "swiper/css";
+import "swiper/css/navigation";
 
 const ReactPlayer = dynamic(() => import("react-player"), { ssr: false });
 
@@ -14,11 +18,11 @@ interface Movie {
   releaseDate: string;
   posterUrl: string;
   trailerUrl?: string;
-  ratingLabel?: string; // VD: T13, T16, K
+  ratingLabel?: string;
 }
 
 export default function NowPlayingSlider() {
-  const [movies, setMovies] = useState<Movie[]>([]);
+  const [movies, setMovies] = useState<Movie[]>([]); // luôn là mảng
   const [loading, setLoading] = useState(true);
   const [selectedTrailer, setSelectedTrailer] = useState<string | null>(null);
 
@@ -27,7 +31,7 @@ export default function NowPlayingSlider() {
       try {
         const res = await fetch("/api/movies/now-playing");
         const data = await res.json();
-        if (data.success) setMovies(data.data);
+        if (data.success) setMovies(data.data || []);
       } catch (error) {
         console.error(error);
       } finally {
@@ -45,7 +49,12 @@ export default function NowPlayingSlider() {
         PHIM ĐANG CHIẾU
       </h1>
 
-      <Swiper spaceBetween={20} slidesPerView={4}>
+      <Swiper
+        spaceBetween={20}
+        slidesPerView={4}
+        modules={[Navigation]}
+        navigation
+      >
         {movies.map((movie) => (
           <SwiperSlide key={movie._id}>
             <MovieCard movie={movie} onWatchTrailer={setSelectedTrailer} />
@@ -63,7 +72,7 @@ export default function NowPlayingSlider() {
               ✕
             </button>
             <ReactPlayer
-            //   url={selectedTrailer}
+              // url={selectedTrailer}
               controls
               playing
               width="100%"
@@ -84,12 +93,15 @@ function MovieCard({
   onWatchTrailer: (url: string) => void;
 }) {
   return (
-    <div className="bg-[#12192e] text-white rounded-lg overflow-hidden shadow-lg flex flex-col">
-      <div className="relative w-full pb-[150%] overflow-hidden rounded-lg">
-        <img
+    <div className="bg-[#12192e] text-white rounded-lg overflow-hidden shadow-lg flex flex-col h-full">
+      {/* Poster */}
+      <div className="relative w-full pt-[150%] overflow-hidden">
+        <Image
           src={movie.posterUrl}
           alt={movie.title}
-          className="absolute inset-0 w-full h-full object-cover"
+          fill
+          style={{ objectFit: "cover" }}
+          sizes="(max-width: 768px) 100vw, 300px"
         />
         {movie.ratingLabel && (
           <div className="absolute top-2 left-2 bg-red-600 text-white font-bold text-xs px-2 py-1 rounded">
@@ -98,9 +110,14 @@ function MovieCard({
         )}
       </div>
 
-      <div className="p-2 flex flex-col gap-2">
-        <h3 className="text-sm font-semibold uppercase line-clamp-2">{movie.title}</h3>
-        <div className="flex gap-2">
+      {/* Nội dung */}
+      <div className="p-2 flex flex-col justify-between flex-grow">
+        {/* Tiêu đề: giới hạn 2 dòng, cao tối thiểu để card đều nhau */}
+        <h3 className="text-sm font-semibold uppercase line-clamp-2 min-h-[40px]">
+          {movie.title}
+        </h3>
+
+        <div className="flex gap-2 mt-2">
           {movie.trailerUrl && (
             <button
               onClick={() => onWatchTrailer(movie.trailerUrl!)}

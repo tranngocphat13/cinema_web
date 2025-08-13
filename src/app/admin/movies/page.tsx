@@ -1,5 +1,6 @@
 "use client";
 import React, { useState, useEffect } from "react";
+import Image from "next/image";
 
 interface Genre {
   _id: string;
@@ -230,17 +231,32 @@ export default function AdminMoviesPage() {
               <th className="border p-2">Trạng thái</th>
               <th className="border p-2">Quốc gia</th>
               <th className="border p-2">Thể loại</th>
+              <th className="border p-2">Trailer</th> {/* Cột mới */}
               <th className="border p-2">Thao tác</th>
             </tr>
           </thead>
           <tbody>
             {movies.map(m => (
               <tr key={m._id}>
-                <td className="border p-2">{m.posterUrl && <img src={m.posterUrl} className="w-16 h-24 object-cover" />}</td>
+                <td className="border p-2">{m.posterUrl && <Image src={m.posterUrl} alt={m.title} width={64} height={96} />}</td>
                 <td className="border p-2">{m.title}</td>
                 <td className="border p-2">{m.status}</td>
                 <td className="border p-2">{m.country}</td>
                 <td className="border p-2">{m.genres?.map(g => g.name).join(", ")}</td>
+                <td className="border p-2">
+                  {m.trailerUrl ? (
+                    <a
+                      href={m.trailerUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-blue-600 underline hover:text-blue-800"
+                    >
+                      Xem Trailer
+                    </a>
+                  ) : (
+                    <span className="text-gray-500">Không có trailer</span>
+                  )}
+                </td>
                 <td className="border p-2 space-x-2">
                   <button onClick={() => handleEdit(m)} className="bg-yellow-500 text-white px-3 py-1">Sửa</button>
                   <button onClick={() => handleDelete(m._id)} className="bg-red-500 text-white px-3 py-1">Xóa</button>

@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import dynamic from "next/dynamic";
 import { PlayCircle } from "lucide-react";
 import "swiper/css";
-
+import Image from "next/image";
 const ReactPlayer = dynamic(() => import("react-player"), { ssr: false });
 
 interface Movie {
@@ -102,7 +102,7 @@ function MovieCard({
     <div className="bg-[#12192e] text-white rounded-lg overflow-hidden shadow-lg group flex flex-col">
       {/* Poster */}
       <div className="relative w-full pb-[150%] overflow-hidden">
-        <img
+        <Image
           src={movie.posterUrl}
           alt={movie.title}
           className="absolute inset-0 w-full h-full object-cover transition-transform group-hover:scale-105"

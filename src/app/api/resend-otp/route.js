@@ -1,8 +1,8 @@
 // src/app/api/movies/[id]/route.js
 import { NextResponse } from "next/server";
-import dbConnect from "../../../../lib/mongodb.js";
-import Movie from "../../../../models/movies.js";
-import Genre from "../../../../models/genres.js";
+import dbConnect from "@/lib/mongodb.js";
+import Movie from "@/models/movies.js";
+import Genre from "@/models/genres.js";
 
 const API_KEY = process.env.TMDB_API_KEY;
 const BASE_URL = "https://api.themoviedb.org/3";
