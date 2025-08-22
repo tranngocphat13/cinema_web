@@ -1,17 +1,12 @@
-// scripts/fetchNowPlaying.js
-// Chạy: node scripts/fetchNowPlaying.js
-// Yêu cầu: Node >= 18 (có fetch sẵn) hoặc cài: npm i node-fetch dotenv
-
 import 'dotenv/config';
-import fetch from 'node-fetch'; // Nếu Node >=18 có thể bỏ dòng này
+import nodeCron from 'node-cron';
+import fetch from 'node-fetch';
+import dbConnect from '../src/lib/mongodb.js';
+import Movie from '../src/models/movies.js';
+import Genre from '../src/models/genres.js';
 
 const API_KEY = process.env.TMDB_API_KEY;
 const TMDB_BASE = "https://api.themoviedb.org/3";
-
-if (!API_KEY) {
-  console.error("❌ Lỗi: Chưa thiết lập TMDB_API_KEY trong file .env");
-  process.exit(1);
-}
 
 function toEmbedUrl(key) {
   return key ? `https://www.youtube.com/embed/${key}?autoplay=1` : "";
@@ -23,16 +18,11 @@ async function fetchNowPlaying() {
   const allMovies = [];
 
   do {
-    console.log(`📄 Đang tải trang ${page}...`);
     const res = await fetch(
       `${TMDB_BASE}/movie/now_playing?api_key=${API_KEY}&language=vi-VN&page=${page}&region=VN`
     );
     const json = await res.json();
-
-    if (!json.results) {
-      console.warn(`⚠ Không nhận được dữ liệu từ trang ${page}`);
-      break;
-    }
+    if (!json.results) break;
 
     totalPages = json.total_pages || 1;
 
@@ -50,6 +40,7 @@ async function fetchNowPlaying() {
         allMovies.push({
           tmdbId: detail.id,
           title: detail.title,
+          overview: detail.overview || "",
           duration: detail.runtime || 0,
           country: detail.production_countries?.[0]?.name || "",
           genres: detail.genres?.map(g => g.name) || [],
@@ -58,7 +49,6 @@ async function fetchNowPlaying() {
           actors: (detail.credits?.cast || []).slice(0, 5).map(a => a.name),
           posterUrl: detail.poster_path ? `https://image.tmdb.org/t/p/w500${detail.poster_path}` : "",
           trailerUrl: toEmbedUrl(trailer?.key),
-          description: detail.overview || "",
         });
 
       } catch (err) {
@@ -72,13 +62,40 @@ async function fetchNowPlaying() {
   return allMovies;
 }
 
-(async () => {
+async function updateNowPlaying() {
   try {
+    await dbConnect();
     const movies = await fetchNowPlaying();
-    console.log(`✅ Tổng số phim lấy được: ${movies.length}`);
-    console.log(JSON.stringify(movies, null, 2));
-    // TODO: Lưu vào DB ở đây nếu cần
+
+    for (const movie of movies) {
+      const genreIds = [];
+      for (const g of movie.genres) {
+        const genreDoc = await Genre.findOneAndUpdate(
+          { name: g },
+          { name: g },
+          { upsert: true, new: true }
+        );
+        genreIds.push(genreDoc._id);
+      }
+
+      await Movie.findOneAndUpdate(
+        { tmdbId: movie.tmdbId },
+        { ...movie, genres: genreIds },
+        { upsert: true, new: true }
+      );
+    }
+
+    console.log(`✅ [${new Date().toLocaleString()}] Đã cập nhật ${movies.length} phim Now Playing`);
   } catch (err) {
-    console.error("❌ Lỗi fetch:", err);
+    console.error("❌ Lỗi cập nhật phim:", err);
   }
-})();
+}
+
+// CRON JOB: chạy mỗi ngày lúc 03:00 sáng
+nodeCron.schedule('0 3 * * *', () => {
+  console.log(`🔄 [${new Date().toLocaleString()}] Đang chạy cron job...`);
+  updateNowPlaying();
+});
+
+// Chạy ngay lần đầu tiên khi khởi động
+updateNowPlaying();
