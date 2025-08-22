@@ -10,7 +10,8 @@ export default function Home() {
     <div>
       <Navbar />
       <MainLayout />
-      <Footer />  
+      
+      <Footer />
     </div>
   );
 }

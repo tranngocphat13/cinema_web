@@ -3,8 +3,9 @@
 import { useEffect, useState } from "react";
 import dynamic from "next/dynamic";
 import { PlayCircle } from "lucide-react";
-import "swiper/css";
 import Image from "next/image";
+import "swiper/css";
+
 const ReactPlayer = dynamic(() => import("react-player"), { ssr: false });
 
 interface Movie {
@@ -42,13 +43,13 @@ export default function NowPlayingMovies() {
         🎬 Phim đang chiếu
       </h1>
 
-      {/* Loading skeleton */}
+      {/* Loading Skeleton */}
       {loading && (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
           {Array.from({ length: 6 }).map((_, i) => (
             <div
               key={i}
-              className="bg-gray-800 animate-pulse h-[420px] rounded-lg"
+              className="bg-gray-800 animate-pulse rounded-lg h-[420px]"
             ></div>
           ))}
         </div>
@@ -103,9 +104,11 @@ function MovieCard({
       {/* Poster */}
       <div className="relative w-full pb-[150%] overflow-hidden">
         <Image
-          src={movie.posterUrl}
+          src={movie.posterUrl || "/fallback-poster.jpg"}
           alt={movie.title}
-          className="absolute inset-0 w-full h-full object-cover transition-transform group-hover:scale-105"
+          fill
+          sizes="(max-width: 768px) 100vw, 33vw"
+          className="absolute inset-0 object-cover transition-transform group-hover:scale-105"
         />
         {movie.ratingLabel && (
           <div className="absolute top-2 left-2 bg-orange-500 text-white font-bold text-xs px-2 py-1 rounded">

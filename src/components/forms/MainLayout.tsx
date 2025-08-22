@@ -1,4 +1,3 @@
-import NowPlayingSlider from "@/components/forms/movie-nowplaying";
 import BannerSlider from "@/components/ui/bannersliders";
 
 export default function HomePage() {
@@ -7,7 +6,6 @@ export default function HomePage() {
       {/* Banner */}
       <BannerSlider />
       {/* Now Playing Movies */}
-      <NowPlayingSlider />
     </div>
   );
 }

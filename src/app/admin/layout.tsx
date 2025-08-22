@@ -9,13 +9,13 @@ import { useSession } from "next-auth/react";
 const menuItems = [
   { href: "/admin", label: "Thống kê", icon: "📊" },
   { href: "/admin/user", label: "Quản lý tài khoản", icon: "👤" },
-  { href: "/admin/movies", label: "Quản lý phim", icon: "🎬" },
-  { href: "/admin/cinemas", label: "Quản lý rạp / chỗ ngồi", icon: "🏢" },
-  { href: "/admin/tickets", label: "Quản lý vé", icon: "🎟️" },
-  { href: "/admin/genres", label: "Quản lý thể loại", icon: "📂" },
-  { href: "/admin/giave", label: "Quản lý giá vé", icon: "💵" },
-  { href: "/admin/quangcao", label: "Quản lý quảng cáo", icon: "📢" },
-  { href: "/admin/thanhvien", label: "Quản lý thành viên", icon: "👥" }
+  // { href: "/admin/movies", label: "Quản lý phim", icon: "🎬" },
+  // { href: "/admin/cinemas", label: "Quản lý rạp / chỗ ngồi", icon: "🏢" },
+  // { href: "/admin/tickets", label: "Quản lý vé", icon: "🎟️" },
+  // { href: "/admin/genres", label: "Quản lý thể loại", icon: "📂" },
+  // { href: "/admin/giave", label: "Quản lý giá vé", icon: "💵" },
+  // { href: "/admin/quangcao", label: "Quản lý quảng cáo", icon: "📢" },
+  // { href: "/admin/thanhvien", label: "Quản lý thành viên", icon: "👥" }
 ];
 
 export default function AdminLayout({ children }: { children: ReactNode }) {

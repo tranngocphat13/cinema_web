@@ -1,76 +1,40 @@
-// src/app/api/movies/[id]/route.js
+// /api/resend-otp/route.js
+
 import { NextResponse } from "next/server";
-import dbConnect from "@/lib/mongodb.js";
-import Movie from "@/models/movies.js";
-import Genre from "@/models/genres.js";
+import { connectDB } from "@/lib/mongodb";
+import User from "@/models/user";
+import nodemailer from "nodemailer";
 
-const API_KEY = process.env.TMDB_API_KEY;
-const BASE_URL = "https://api.themoviedb.org/3";
-
-export async function GET(req, ctx) {
+export async function POST(req) {
   try {
-    const { id } = await ctx.params; // ✅ phải await
-    if (!id) {
-      return NextResponse.json({ error: "Missing id" }, { status: 400 });
-    }
+    const { email } = await req.json();
+    await connectDB();
 
-    await dbConnect();
+    const user = await User.findOne({ email });
+    if (!user) return NextResponse.json({ message: "Không tìm thấy người dùng" }, { status: 404 });
 
-    // 1. Tìm trong MongoDB
-    let movie = await Movie.findOne({ tmdbId: Number(id) });
-    if (movie) {
-      console.log("📦 Lấy từ MongoDB");
-      return NextResponse.json(movie);
-    }
+    const verificationCode = Math.floor(100000 + Math.random() * 900000).toString();
+    const expires = new Date(Date.now() + 3 * 60 * 1000);
 
-    // 2. Gọi TMDb API
-    const res = await fetch(
-      `${BASE_URL}/movie/${id}?api_key=${API_KEY}&language=vi-VN&append_to_response=videos,credits`
-    );
-    if (!res.ok) throw new Error("TMDb request failed");
-    const data = await res.json();
+    user.verificationCode = verificationCode;
+    user.verificationCodeExpires = expires;
+    await user.save();
 
-    // 3. Lưu genre vào collection genres
-    const genreIds = [];
-    for (const g of data.genres) {
-      let genre = await Genre.findOne({ name: g.name });
-      if (!genre) {
-        genre = await Genre.create({ name: g.name });
-      }
-      genreIds.push(genre._id);
-    }
-
-    // 4. Tìm trailer
-    const trailer = data.videos?.results.find(
-      (v) => v.site === "YouTube" && v.type === "Trailer"
-    );
-
-    // 5. Lưu vào MongoDB
-    movie = await Movie.create({
-      tmdbId: data.id,
-      title: data.title,
-      duration: data.runtime || 0,
-      country: data.production_countries?.[0]?.name || "",
-      genres: genreIds,
-      director:
-        data.credits?.crew.find((c) => c.job === "Director")?.name || "",
-      releaseDate: data.release_date ? new Date(data.release_date) : null,
-      endDate: null,
-      ageLimit: "",
-      actors: data.credits?.cast.slice(0, 5).map((a) => a.name) || [],
-      posterUrl: data.poster_path
-        ? `https://image.tmdb.org/t/p/w500${data.poster_path}`
-        : "",
-      trailerUrl: trailer
-        ? `https://www.youtube.com/watch?v=${trailer.key}`
-        : "",
-      description: data.overview,
+    const transporter = nodemailer.createTransport({
+      service: "Gmail",
+      auth: { user: process.env.EMAIL_USER, pass: process.env.EMAIL_PASS },
     });
 
-    console.log("💾 Lưu vào MongoDB");
-    return NextResponse.json(movie);
+    await transporter.sendMail({
+      from: `"Movie App" <${process.env.EMAIL_USER}>`,
+      to: email,
+      subject: "Mã OTP mới",
+      text: `Mã OTP mới của bạn là: ${verificationCode}. Mã này sẽ hết hạn sau 3 phút.`,
+    });
+
+    return NextResponse.json({ message: "Đã gửi lại mã OTP" });
   } catch (err) {
     console.error(err);
-    return NextResponse.json({ error: err.message }, { status: 500 });
+    return NextResponse.json({ message: "Lỗi gửi lại mã" }, { status: 500 });
   }
 }

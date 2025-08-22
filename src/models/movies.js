@@ -1,22 +1,22 @@
+// models/movies.ts
 import mongoose from "mongoose";
 
-const movieSchema = new mongoose.Schema(
+const MovieSchema = new mongoose.Schema(
   {
-    tmdbId: { type: Number, unique: true }, // 🔹 Để tránh trùng lặp
-    title: { type: String, required: true },
-    duration: { type: Number }, // phút
-    country: { type: String },
+    tmdbId: { type: Number, unique: true, index: true },
+    title: String,
+    overview: String,
+    releaseDate: Date,
+    posterUrl: String,
+    trailerUrl: String,
+    ratingLabel: String,
     genres: [{ type: mongoose.Schema.Types.ObjectId, ref: "Genre" }],
-    director: { type: String },
-    releaseDate: { type: Date },
-    endDate: { type: Date },
-    ageLimit: { type: String }, // T13, T18, K
-    actors: [{ type: String }],
-    posterUrl: { type: String },
-    trailerUrl: { type: String },
-    description: { type: String },
+    duration: Number,
+    country: String,
+    director: String,
+    actors: [String],
   },
   { timestamps: true }
 );
 
-export default mongoose.models.Movie || mongoose.model("Movie", movieSchema);
+export default mongoose.models.Movie || mongoose.model("Movie", MovieSchema);
