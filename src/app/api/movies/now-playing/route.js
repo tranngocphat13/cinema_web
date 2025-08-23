@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import dbConnect from "@/lib/mongodb";
 import Movie from "@/models/movies";
+import "@/models/genres";
 
 export async function GET() {
   try {
