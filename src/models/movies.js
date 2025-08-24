@@ -2,19 +2,18 @@ import mongoose from "mongoose";
 
 const MovieSchema = new mongoose.Schema(
   {
-    tmdbId: { type: Number, unique: true, index: true },
+    tmdbId: { type: Number, unique: true, required: true, index: true },
     title: String,
     overview: String,
-    releaseDate: Date,
-    posterUrl: String,
-    trailerUrl: String,
-    ratingLabel: String,
     genres: [String],
-    duration: Number,
-    country: String,
-    director: String,
-    actors: [String],
-    status: { type: String, enum: ["now_playing", "upcoming"], default: "now_playing" }
+    posterUrl: String,
+    backdropUrl: String,
+    trailerUrl: String,
+    releaseDate: Date,
+    status: { type: String, enum: ["now_playing", "upcoming", "ended"] },
+    runtime: Number,
+    ratingLabel: String,
+    countries: [String],
   },
   { timestamps: true }
 );
