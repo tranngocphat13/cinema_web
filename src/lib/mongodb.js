@@ -1,23 +1,26 @@
-
+// lib/mongodb.js
 import mongoose from "mongoose";
 
 const MONGODB_URI = process.env.MONGODB_URI;
 
 if (!MONGODB_URI) {
-  throw new Error("⚠️ Vui lòng cấu hình MONGODB_URI trong file .env.local");
+  throw new Error("Please add MONGODB_URI to .env");
 }
 
-let cached = global.mongoose || { conn: null, promise: null };
+let isConnected = false;
 
 export default async function connectDB() {
-  if (cached.conn) return cached.conn;
+  if (isConnected) return mongoose;
 
-  if (!cached.promise) {
-    cached.promise = mongoose.connect(MONGODB_URI, {
-      bufferCommands: false,
-    }).then((mongoose) => mongoose);
+  try {
+    const conn = await mongoose.connect(MONGODB_URI, {
+      dbName: "test", // đổi theo tên database của bạn
+    });
+    isConnected = true;
+    console.log("MongoDB connected");
+    return conn;
+  } catch (err) {
+    console.error("MongoDB connection error:", err);
+    throw err;
   }
-
-  cached.conn = await cached.promise;
-  return cached.conn;
 }

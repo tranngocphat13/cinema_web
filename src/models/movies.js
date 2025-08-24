@@ -1,4 +1,3 @@
-// models/movies.ts
 import mongoose from "mongoose";
 
 const MovieSchema = new mongoose.Schema(
@@ -10,11 +9,12 @@ const MovieSchema = new mongoose.Schema(
     posterUrl: String,
     trailerUrl: String,
     ratingLabel: String,
-    genres: [{ type: mongoose.Schema.Types.ObjectId, ref: "Genre" }],
+    genres: [String],
     duration: Number,
     country: String,
     director: String,
     actors: [String],
+    status: { type: String, enum: ["now_playing", "upcoming"], default: "now_playing" }
   },
   { timestamps: true }
 );

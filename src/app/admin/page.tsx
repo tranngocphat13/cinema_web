@@ -1,9 +1,28 @@
-// app/admin/page.tsx
-export default function AdminHome() {
+"use client";
+import { useState } from "react";
+
+export default function SyncButton() {
+  const [loading, setLoading] = useState(false);
+  const [msg, setMsg] = useState("");
+
+  async function handleSync() {
+    setLoading(true);
+    const res = await fetch("/api/movies/sync");
+    const data = await res.json();
+    setMsg(data.message || data.error);
+    setLoading(false);
+  }
+
   return (
-    <div>
-      <h1 className="text-3xl font-bold mb-4">📊 Dashboard Admin</h1>
-      <p>Chào mừng quản trị viên — Thống kê tóm tắt sẽ hiển thị ở đây.</p>
+    <div className="p-4">
+      <button 
+        onClick={handleSync} 
+        disabled={loading}
+        className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700"
+      >
+        {loading ? "Đang đồng bộ..." : "Đồng bộ ngay"}
+      </button>
+      {msg && <p className="mt-2 text-gray-700">{msg}</p>}
     </div>
   );
 }

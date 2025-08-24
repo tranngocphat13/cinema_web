@@ -1,141 +1,64 @@
+// app/movies/page.tsx
 "use client";
 
 import { useEffect, useState } from "react";
-import dynamic from "next/dynamic";
 import { PlayCircle } from "lucide-react";
+import Link from "next/link";
 import Image from "next/image";
-import "swiper/css";
 
-const ReactPlayer = dynamic(() => import("react-player"), { ssr: false });
-
-interface Movie {
+type Movie = {
   _id: string;
   title: string;
-  releaseDate: string;
   posterUrl: string;
+  releaseDate: string;
+  overview: string;
+  status: "now_playing" | "upcoming";
   trailerUrl?: string;
-  ratingLabel?: string; // VD: T13, T16, K
-}
+  country: string;
+};
 
-export default function NowPlayingMovies() {
+export default function MoviesPage() {
   const [movies, setMovies] = useState<Movie[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [selectedTrailer, setSelectedTrailer] = useState<string | null>(null);
 
   useEffect(() => {
-    async function fetchMovies() {
-      try {
-        const res = await fetch("/api/movies/now-playing");
-        const data = await res.json();
-        if (data.success) setMovies(data.data);
-      } catch (error) {
-        console.error(error);
-      } finally {
-        setLoading(false);
-      }
-    }
-    fetchMovies();
+    fetch("/api/movies")
+      .then(res => res.json())
+      .then(data => setMovies(data));
   }, []);
 
   return (
-    <div className="p-6 max-w-[1200px] mx-auto">
-      <h1 className="text-3xl font-bold mb-6 text-green-500 uppercase">
-        🎬 Phim đang chiếu
-      </h1>
-
-      {/* Loading Skeleton */}
-      {loading && (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-          {Array.from({ length: 6 }).map((_, i) => (
-            <div
-              key={i}
-              className="bg-gray-800 animate-pulse rounded-lg h-[420px]"
-            ></div>
-          ))}
-        </div>
-      )}
-
-      {/* Movie grid */}
-      {!loading && (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-          {movies.map((movie) => (
-            <MovieCard
-              key={movie._id}
-              movie={movie}
-              onWatchTrailer={(url) => setSelectedTrailer(url)}
-            />
-          ))}
-        </div>
-      )}
-
-      {/* Trailer Modal */}
-      {selectedTrailer && (
-        <div className="fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center z-50 p-4">
-          <div className="w-full max-w-4xl bg-black rounded-lg overflow-hidden relative">
-            <button
-              className="absolute top-2 right-3 text-white text-2xl font-bold"
-              onClick={() => setSelectedTrailer(null)}
-            >
-              ✕
-            </button>
-            <ReactPlayer
-              // url={selectedTrailer}
-              controls
-              playing
-              width="100%"
-              height="500px"
-            />
+    <div className="max-w-7xl mx-auto px-4 py-8">
+      <h1 className="text-3xl font-bold mb-6">🎬 Phim Đang Chiếu & Sắp Chiếu</h1>
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6">
+        {movies.map(movie => (
+          <div key={movie._id} className="bg-white shadow-lg rounded-2xl overflow-hidden flex flex-col">
+            <Image src={movie.posterUrl} alt={movie.title} className="w-full h-72 object-cover" width={300} height={450}/>
+            <div className="p-4 flex-1 flex flex-col">
+              <h2 className="font-semibold text-lg mb-2 line-clamp-2">{movie.title}</h2>
+              <p className="text-sm text-gray-600 mb-3 line-clamp-3">{movie.overview}</p>
+              <p className="text-sm text-gray-500 mb-4">Khởi chiếu: {new Date(movie.releaseDate).toLocaleDateString("vi-VN")}</p>
+              <div className="mt-auto flex gap-2">
+                <Link
+                  href={`/movies/${movie._id}`}
+                  className="flex-1 bg-blue-600 text-white px-3 py-2 rounded-xl text-center hover:bg-blue-700"
+                >
+                  Đặt Vé
+                </Link>
+                {movie.trailerUrl && (
+                  <button
+                    onClick={() => window.open(movie.trailerUrl, "_blank")}
+                    className="p-2 bg-red-500 text-white rounded-xl hover:bg-red-600"
+                  >
+                    <PlayCircle />
+                  </button>
+                )}
+              </div>
+            </div>
+            <div className={`px-4 py-2 text-sm text-white ${movie.status === "now_playing" ? "bg-green-600" : "bg-yellow-500"}`}>
+              {movie.status === "now_playing" ? "Đang Chiếu" : "Sắp Chiếu"}
+            </div>
           </div>
-        </div>
-      )}
-    </div>
-  );
-}
-
-function MovieCard({
-  movie,
-  onWatchTrailer,
-}: {
-  movie: Movie;
-  onWatchTrailer: (url: string) => void;
-}) {
-  return (
-    <div className="bg-[#12192e] text-white rounded-lg overflow-hidden shadow-lg group flex flex-col">
-      {/* Poster */}
-      <div className="relative w-full pb-[150%] overflow-hidden">
-        <Image
-          src={movie.posterUrl || "/fallback-poster.jpg"}
-          alt={movie.title}
-          fill
-          sizes="(max-width: 768px) 100vw, 33vw"
-          className="absolute inset-0 object-cover transition-transform group-hover:scale-105"
-        />
-        {movie.ratingLabel && (
-          <div className="absolute top-2 left-2 bg-orange-500 text-white font-bold text-xs px-2 py-1 rounded">
-            {movie.ratingLabel}
-          </div>
-        )}
-      </div>
-
-      {/* Title + Buttons */}
-      <div className="p-3 flex-1 flex flex-col justify-between">
-        <h2 className="text-sm font-bold uppercase line-clamp-2">
-          {movie.title}
-        </h2>
-
-        <div className="mt-3 flex gap-2">
-          {movie.trailerUrl && (
-            <button
-              onClick={() => onWatchTrailer(movie.trailerUrl!)}
-              className="flex-1 flex items-center justify-center gap-1 border border-blue-400 hover:bg-blue-500 hover:text-white text-blue-400 text-sm py-2 rounded transition"
-            >
-              <PlayCircle className="w-4 h-4" /> Xem Trailer
-            </button>
-          )}
-          <button className="flex-1 bg-yellow-400 hover:bg-yellow-500 text-black font-semibold text-sm py-2 rounded transition cursor-pointer">
-            Đặt Vé
-          </button>
-        </div>
+        ))}
       </div>
     </div>
   );

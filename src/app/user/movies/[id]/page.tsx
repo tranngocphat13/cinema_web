@@ -1,52 +1,25 @@
-"use client";
-
-import { useEffect, useState } from "react";
-import { useParams } from "next/navigation";
+// app/movies/[id]/page.tsx
+import connectDB from "@/lib/mongodb";
+import Movie from "@/models/movies";
 import Image from "next/image";
 
-interface Movie {
-  _id: string;
-  title: string;
-  description: string;
-  poster: string;
-}
+export default async function MovieDetail({ params }: { params: { id: string } }) {
+  await connectDB();
+  const movie = await Movie.findById(params.id);
 
-export default function MovieDetail() {
-  const params = useParams();
-  const id = params?.id as string;
-  const [movie, setMovie] = useState<Movie | null>(null);
-  const [trailerUrl, setTrailerUrl] = useState<string>("");
-
-  useEffect(() => {
-    if (!id) return;
-
-    fetch(`/api/movies/${id}`)
-      .then((res) => res.json())
-      .then((data: Movie) => setMovie(data));
-
-    fetch(`/api/movies/${id}/trailer`)
-      .then((res) => res.json())
-      .then((data: { trailerUrl?: string }) => {
-        if (data.trailerUrl) setTrailerUrl(data.trailerUrl);
-      });
-  }, [id]);
-
-  if (!movie) return <p>Đang tải...</p>;
+  if (!movie) return <div className="text-center p-8">Không tìm thấy phim</div>;
 
   return (
-    <div className="max-w-3xl mx-auto p-4">
-      <Image src={movie.poster} alt={movie.title} className="w-full rounded-xl" />
-      <h1 className="text-3xl font-bold mt-4">{movie.title}</h1>
-      <p className="mt-2 text-gray-700">{movie.description}</p>
-
-      {trailerUrl && (
-        <iframe
-          className="w-full aspect-video mt-4 rounded-xl"
-          src={trailerUrl}
-          title="Trailer"
-          allowFullScreen
-        ></iframe>
-      )}
+    <div className="max-w-5xl mx-auto px-4 py-8">
+      <div className="flex flex-col md:flex-row gap-6">
+        <Image src={movie.posterUrl} alt={movie.title} className="w-full md:w-1/3 rounded-lg shadow-lg" width={300} height={450}/>
+        <div>
+          <h1 className="text-3xl font-bold mb-3">{movie.title}</h1>
+          <p className="mb-4 text-gray-700">{movie.overview}</p>
+          <p className="mb-2">Ngày khởi chiếu: {new Date(movie.releaseDate).toLocaleDateString("vi-VN")}</p>
+          <button className="bg-blue-600 text-white px-4 py-2 rounded-xl hover:bg-blue-700">Đặt Vé Ngay</button>
+        </div>
+      </div>
     </div>
   );
 }
