@@ -34,7 +34,7 @@ export default function Navbar() {
         {/* Menu Desktop */}
         <div className="hidden md:flex items-center space-x-6">
           <Link href="/" className="hover:text-green-500">Trang chủ</Link>
-          <Link href="/user/movies" className="hover:text-green-500">Phim</Link>
+          <Link href="/user/movies/now-playing" className="hover:text-green-500">Phim</Link>
           <Link href="/schedule" className="hover:text-green-500">Lịch chiếu</Link>
           <Link href="/booking" className="hover:text-green-500">Đặt vé</Link>
         </div>
@@ -97,7 +97,7 @@ export default function Navbar() {
         <div className="md:hidden bg-white border-t shadow-lg">
           <div className="flex flex-col space-y-4 p-4">
             <Link href="/" className="hover:text-green-500">Trang chủ</Link>
-            <Link href="/movies" className="hover:text-green-500">Phim</Link>
+            <Link href="/movies/now-playing" className="hover:text-green-500">Phim</Link>
             <Link href="/schedule" className="hover:text-green-500">Lịch chiếu</Link>
             <Link href="/booking" className="hover:text-green-500">Đặt vé</Link>
 

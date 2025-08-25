@@ -4,7 +4,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { ReactNode, useState, useEffect } from "react";
-import { useSession } from "next-auth/react";
+import { useSession, signOut } from "next-auth/react"; // 👈 thêm signOut
 
 const menuItems = [
   { href: "/admin", label: "Thống kê", icon: "📊" },
@@ -15,7 +15,7 @@ const menuItems = [
   { href: "/admin/genres", label: "Quản lý thể loại", icon: "📂" },
   { href: "/admin/giave", label: "Quản lý giá vé", icon: "💵" },
   { href: "/admin/quangcao", label: "Quản lý quảng cáo", icon: "📢" },
-  { href: "/admin/thanhvien", label: "Quản lý thành viên", icon: "👥" }
+  { href: "/admin/thanhvien", label: "Quản lý thành viên", icon: "👥" },
 ];
 
 export default function AdminLayout({ children }: { children: ReactNode }) {
@@ -59,13 +59,25 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
                 href={item.href}
                 onClick={() => setSidebarOpen(false)}
                 className={`flex items-center gap-3 px-3 py-2 rounded-md transition-all duration-200 
-                  ${isActive ? "bg-gray-700 text-white font-semibold" : "text-gray-300 hover:bg-gray-800 hover:text-white"}`}
+                  ${
+                    isActive
+                      ? "bg-gray-700 text-white font-semibold"
+                      : "text-gray-300 hover:bg-gray-800 hover:text-white"
+                  }`}
               >
                 <span>{item.icon}</span>
                 <span>{item.label}</span>
               </Link>
             );
           })}
+
+          {/* 👉 Nút đăng xuất */}
+          <button
+            onClick={() => signOut({ callbackUrl: "/" })}
+            className="flex items-center gap-3 px-3 py-2 mt-4 rounded-md bg-red-600 text-white hover:bg-red-700 transition-all duration-200"
+          >
+            🚪 <span>Đăng xuất</span>
+          </button>
         </nav>
 
         <div className="mt-auto text-xs text-gray-500 pt-4 border-t border-gray-700">
@@ -88,7 +100,10 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
           </div>
 
           <div className="text-xl font-medium">
-            Xin chào, <span className="font-semibold text-blue-600">{session?.user?.name}</span>
+            Xin chào,{" "}
+            <span className="font-semibold text-blue-600">
+              {session?.user?.name}
+            </span>
           </div>
         </header>
 

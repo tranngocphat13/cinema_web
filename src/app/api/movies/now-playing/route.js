@@ -1,18 +1,13 @@
 import { NextResponse } from "next/server";
+import connectDB from "@/lib/mongodb";
+import Movie from "@/models/movies";
+
+export const dynamic = "force-dynamic";
 
 export async function GET() {
-  const url = `https://api.themoviedb.org/3/movie/now_playing?api_key=${process.env.TMDB_API_KEY}&region=VN&language=vi-VN&page=1`;
-
-  try {
-    const res = await fetch(url);
-    const data = await res.json();
-
-    if (!res.ok) {
-      return NextResponse.json({ error: data.status_message }, { status: res.status });
-    }
-
-    return NextResponse.json(data.results); // Trả về danh sách phim
-  } catch (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
-  }
+  await connectDB();
+  const movies = await Movie.find({ status: "now_playing" })
+    .sort({ releaseDate: -1, createdAt: -1 })
+    .lean();
+  return NextResponse.json(movies);
 }
