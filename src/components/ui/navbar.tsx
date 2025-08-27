@@ -12,7 +12,6 @@ export default function Navbar() {
 
   const userName = session?.user?.name || "Người dùng";
 
-  // Close user menu when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (userMenuRef.current && !userMenuRef.current.contains(event.target as Node)) {
@@ -27,16 +26,15 @@ export default function Navbar() {
     <nav className="bg-white shadow-md sticky top-0 z-50">
       <div className="max-w-7xl mx-auto px-6 py-4 flex justify-between items-center">
         {/* Logo */}
-        <Link href="/" className="text-2xl font-bold text-green-600">
+        <Link href="/" className="text-2xl font-extrabold text-green-600 tracking-wide">
           MyCinema
         </Link>
 
         {/* Menu Desktop */}
-        <div className="hidden md:flex items-center space-x-6">
-          <Link href="/" className="hover:text-green-500">Trang chủ</Link>
-          <Link href="/user/movies/now-playing" className="hover:text-green-500">Phim</Link>
-          <Link href="/schedule" className="hover:text-green-500">Lịch chiếu</Link>
-          <Link href="/booking" className="hover:text-green-500">Đặt vé</Link>
+        <div className="hidden md:flex items-center space-x-8 font-medium">
+          <Link href="/" className="hover:text-green-500 transition-colors">Trang chủ</Link>
+          <Link href="/schedule" className="hover:text-green-500 transition-colors">Lịch chiếu</Link>
+          <Link href="/booking" className="hover:text-green-500 transition-colors">Đặt vé</Link>
         </div>
 
         {/* User Menu Desktop */}
@@ -47,12 +45,12 @@ export default function Navbar() {
             <div className="relative" ref={userMenuRef}>
               <button
                 onClick={() => setUserMenuOpen((prev) => !prev)}
-                className="font-semibold text-gray-700 px-4 py-2 border rounded-lg hover:bg-gray-100 transition-colors"
+                className="font-semibold text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-100 transition"
               >
                 Xin chào, {userName}
               </button>
               {userMenuOpen && (
-                <div className="absolute right-0 mt-2 w-48 bg-white border rounded-lg shadow-lg">
+                <div className="absolute right-0 mt-2 w-48 bg-white border rounded-xl shadow-lg">
                   <Link href="/profile" className="block px-4 py-2 hover:bg-gray-100">
                     Tài khoản
                   </Link>
@@ -69,13 +67,13 @@ export default function Navbar() {
             <>
               <Link
                 href="/login"
-                className="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors"
+                className="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition"
               >
                 Đăng nhập
               </Link>
               <Link
                 href="/register"
-                className="px-4 py-2 border rounded-lg hover:bg-gray-100 transition-colors"
+                className="px-4 py-2 border rounded-lg hover:bg-gray-100 transition"
               >
                 Đăng ký
               </Link>
@@ -94,10 +92,9 @@ export default function Navbar() {
 
       {/* Mobile Menu */}
       {isMenuOpen && (
-        <div className="md:hidden bg-white border-t shadow-lg">
+        <div className="md:hidden bg-white border-t shadow-lg animate-fadeIn">
           <div className="flex flex-col space-y-4 p-4">
             <Link href="/" className="hover:text-green-500">Trang chủ</Link>
-            <Link href="/movies/now-playing" className="hover:text-green-500">Phim</Link>
             <Link href="/schedule" className="hover:text-green-500">Lịch chiếu</Link>
             <Link href="/booking" className="hover:text-green-500">Đặt vé</Link>
 

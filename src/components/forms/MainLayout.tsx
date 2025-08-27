@@ -1,11 +1,8 @@
-import BannerSlider from "@/components/ui/bannersliders";
+import NowPlayingPage from "@/app/user/movies/now-playing/page";
+
 
 export default function HomePage() {
   return (
-    <div>
-      {/* Banner */}
-      <BannerSlider />
-      {/* Now Playing Movies */}
-    </div>
+    <NowPlayingPage/>
   );
 }

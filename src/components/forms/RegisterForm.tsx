@@ -1,7 +1,7 @@
 "use client";
-
 import React, { useState } from "react";
 import { useRouter } from "next/navigation";
+import { Eye, EyeOff, Mail, User } from "lucide-react";
 
 export default function RegisterForm() {
   const router = useRouter();
@@ -9,6 +9,7 @@ export default function RegisterForm() {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [otp, setOtp] = useState("");
 
   const [error, setError] = useState("");
@@ -52,9 +53,7 @@ export default function RegisterForm() {
     const data = await res.json();
     if (res.ok) {
       setSuccess("Xác thực thành công!");
-      setTimeout(() => {
-        router.push("/login");
-      }, 2000);
+      setTimeout(() => router.push("/login"), 2000);
     } else {
       setError(data.message || "Lỗi xác thực");
     }
@@ -78,89 +77,128 @@ export default function RegisterForm() {
   };
 
   return (
-    <div className="max-w-md mx-auto mt-12 p-6 rounded-lg shadow-lg border-t-4 border-green-500 bg-white">
-      <h2 className="text-2xl font-bold text-center mb-6">Đăng ký</h2>
+    <div className="min-h-screen w-full bg-gradient-to-br from-black via-emerald-900 to-emerald-800 flex items-center justify-center p-4">
+      <div className="w-full max-w-md rounded-2xl bg-white p-6 sm:p-8 shadow-xl">
+        <h1 className="text-2xl font-semibold text-gray-900 text-center mb-6">
+          {step === "register" ? "Create an account" : "Verify your email"}
+        </h1>
 
-      {step === "register" && (
-        <form onSubmit={handleRegister} className="flex flex-col gap-4">
-          <div>
-            <label className="block font-medium mb-1">Họ và tên</label>
-            <input
-              type="text"
-              placeholder="Nguyễn Văn A"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              className="w-full border rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-green-400"
-            />
+        {step === "register" && (
+          <form onSubmit={handleRegister} className="space-y-4">
+            {/* Full Name */}
+            <label className="block">
+              <span className="text-sm font-medium text-gray-700">Full Name</span>
+              <div className="relative mt-1">
+                <input
+                  type="text"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  placeholder="Nguyễn Văn A"
+                  className="w-full rounded-xl border border-gray-300 focus:border-emerald-500 focus:ring-emerald-500 outline-none px-4 py-3 text-[15px]"
+                />
+                <User size={18} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400" />
+              </div>
+            </label>
+
+            {/* Email */}
+            <label className="block">
+              <span className="text-sm font-medium text-gray-700">Email</span>
+              <div className="relative mt-1">
+                <input
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="you@example.com"
+                  className="w-full rounded-xl border border-gray-300 focus:border-emerald-500 focus:ring-emerald-500 outline-none px-4 py-3 text-[15px]"
+                />
+                <Mail size={18} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400" />
+              </div>
+            </label>
+
+            {/* Password */}
+            <label className="block">
+              <span className="text-sm font-medium text-gray-700">Password</span>
+              <div className="relative mt-1">
+                <input
+                  type={showPassword ? "text" : "password"}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="********"
+                  className="w-full rounded-xl border border-gray-300 focus:border-emerald-500 focus:ring-emerald-500 outline-none px-4 py-3 text-[15px] pr-10"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword((prev) => !prev)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                >
+                  {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                </button>
+              </div>
+            </label>
+
+            {error && (
+              <div className="bg-red-500 text-white w-full text-sm py-2 px-3 rounded-lg">
+                {error}
+              </div>
+            )}
+
+            <button
+              type="submit"
+              disabled={!name || !email || !password}
+              className="w-full rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white font-semibold py-3 transition disabled:opacity-50"
+            >
+              Register
+            </button>
+
+            <p className="text-center text-sm text-gray-500">
+              Already have an account?{" "}
+              <span
+                onClick={() => router.push("/login")}
+                className="text-emerald-600 hover:underline font-medium cursor-pointer"
+              >
+                Login Here
+              </span>
+            </p>
+          </form>
+        )}
+
+        {step === "verify" && (
+          <div className="space-y-5">
+            <label className="block">
+              <span className="text-sm font-medium text-gray-700">Enter OTP Code</span>
+              <input
+                type="text"
+                placeholder="123456"
+                value={otp}
+                onChange={(e) => setOtp(e.target.value)}
+                className="w-full rounded-xl border border-gray-300 focus:border-emerald-500 focus:ring-emerald-500 outline-none px-4 py-3 text-[15px]"
+              />
+            </label>
+            <button
+              onClick={handleVerify}
+              className="w-full rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white font-semibold py-3 transition"
+            >
+              Verify
+            </button>
+            <button
+              onClick={handleResendOTP}
+              className="block text-center w-full text-sm text-gray-600 hover:underline"
+            >
+              Resend OTP
+            </button>
           </div>
+        )}
 
-          <div>
-            <label className="block font-medium mb-1">Email</label>
-            <input
-              type="email"
-              placeholder="example@gmail.com"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className="w-full border rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-green-400"
-            />
-          </div>
-
-          <div>
-            <label className="block font-medium mb-1">Mật khẩu</label>
-            <input
-              type="password"
-              placeholder="********"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="w-full border rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-green-400"
-            />
-          </div>
-
-          <button
-            className="bg-green-500 hover:bg-green-600 text-white py-2 rounded font-bold disabled:opacity-50"
-            disabled={!name || !email || !password}
+        {(error || success) && (
+          <div
+            className={`mt-4 p-2 rounded text-center ${
+              error ? "bg-red-500" : "bg-green-500"
+            } text-white`}
           >
-            Đăng ký
-          </button>
-        </form>
-      )}
-
-      {step === "verify" && (
-        <div className="flex flex-col gap-4">
-          <div>
-            <label className="block font-medium mb-1">Nhập mã OTP</label>
-            <input
-              type="text"
-              placeholder="123456"
-              value={otp}
-              onChange={(e) => setOtp(e.target.value)}
-              className="w-full border rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400"
-            />
+            {error || success}
           </div>
-          <button
-            onClick={handleVerify}
-            className="bg-blue-500 hover:bg-blue-600 text-white py-2 rounded font-bold"
-          >
-            Xác thực mã
-          </button>
-          <button
-            onClick={handleResendOTP}
-            className="text-sm text-gray-600 underline"
-          >
-            Gửi lại mã OTP
-          </button>
-        </div>
-      )}
-
-      {(error || success) && (
-        <div
-          className={`mt-4 p-2 rounded ${
-            error ? "bg-red-500" : "bg-green-500"
-          } text-white`}
-        >
-          {error || success}
-        </div>
-      )}
+        )}
+      </div>
     </div>
   );
 }
