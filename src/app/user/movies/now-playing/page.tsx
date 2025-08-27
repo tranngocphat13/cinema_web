@@ -51,7 +51,7 @@ export default function NowPlayingPage() {
               Xem Chi Tiết
             </Link>
             <Link
-              href={`/user/movies/booking/${movie.tmdbId}`}
+              href={`/user/booking/${movie._id}`}
               className="bg-yellow-500 text-white text-xs py-1 px-3 rounded hover:bg-yellow-600 transition self-start"
             >
               Đặt Vé
