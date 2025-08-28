@@ -13,7 +13,7 @@ const menuItems = [
   { href: "/admin/cinemas", label: "Quản lý rạp / chỗ ngồi", icon: "🏢" },
   { href: "/admin/tickets", label: "Quản lý vé", icon: "🎟️" },
   { href: "/admin/genres", label: "Quản lý thể loại", icon: "📂" },
-  { href: "/admin/giave", label: "Quản lý giá vé", icon: "💵" },
+  { href: "/admin/showtimes", label: "Quản lý suất chiếu", icon: "💵" },
   { href: "/admin/quangcao", label: "Quản lý quảng cáo", icon: "📢" },
   { href: "/admin/thanhvien", label: "Quản lý thành viên", icon: "👥" },
 ];
