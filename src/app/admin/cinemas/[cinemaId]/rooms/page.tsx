@@ -60,7 +60,9 @@ export default function AdminRoomsPage({ params }: AdminRoomsPageProps) {
 
   const handleDeleteRoom = async (id: string) => {
     try {
-      const res = await fetch(`/api/rooms/${id}`, { method: "DELETE" });
+      const res = await fetch(`/api/cinemas/${cinemaId}/rooms/${id}`, {
+        method: "DELETE",
+      });
       if (!res.ok) throw new Error("Xóa phòng thất bại");
       fetchRooms();
     } catch (err) {
@@ -101,7 +103,13 @@ export default function AdminRoomsPage({ params }: AdminRoomsPageProps) {
                 >
                   Xóa
                 </Button>
-                <Button onClick={() => router.push(`/admin/cinemas/${cinemaId}/rooms/${room._id}/seats`)}>
+                <Button
+                  onClick={() =>
+                    router.push(
+                      `/admin/cinemas/${cinemaId}/rooms/${room._id}/seats`
+                    )
+                  }
+                >
                   Quản lý ghế
                 </Button>
               </div>

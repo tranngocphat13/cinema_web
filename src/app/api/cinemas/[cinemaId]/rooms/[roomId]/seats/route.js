@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import connectDB from "@/lib/mongodb";
 import Seat from "@/models/seat";
-// import Room from "@/models/room";
+import Room from "@/models/room";
 
 export async function GET(req, context) {
   try {
