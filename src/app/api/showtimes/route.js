@@ -1,48 +1,93 @@
-import { NextResponse } from "next/server";
-import connectDB from "@/lib/mongodb";
+import dbConnect from "@/lib/mongodb";
 import Showtime from "@/models/showtimes";
-import Movie from "@/models/movies";   // ❌ bạn quên import Movie
-import mongoose from "mongoose";
+import Movie from "@/models/movies";
+import Cinema from "@/models/cinema";
+import Room from "@/models/room";
 
-export async function GET(req) {
+// ✅ Lấy tất cả showtimes
+export async function GET() {
+  await dbConnect();
   try {
-    await connectDB();
+    const showtimes = await Showtime.find()
+      .populate("movie")
+      .populate("cinema")
+      .populate("room");
 
-    const { searchParams } = new URL(req.url);
-    const movieId = searchParams.get("movie");
-
-    const query = {};
-    if (movieId && mongoose.Types.ObjectId.isValid(movieId)) {
-      query.movie = new mongoose.Types.ObjectId(movieId); // lọc đúng movie
-    }
-
-    const showtimes = await Showtime.find(query).populate("movie");
-    return NextResponse.json(showtimes);
+    return new Response(JSON.stringify(showtimes), {
+      status: 200,
+      headers: { "Content-Type": "application/json" },
+    });
   } catch (error) {
-    console.error("GET showtimes error:", error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    console.error("❌ GET showtimes error:", error);
+    return new Response(
+      JSON.stringify({ error: "Không thể lấy danh sách suất chiếu" }),
+      { status: 500, headers: { "Content-Type": "application/json" } }
+    );
   }
 }
 
+// ✅ Tạo mới showtime
 export async function POST(req) {
+  await dbConnect();
   try {
-    await connectDB();
-    const body = await req.json();
+    const { movieId, cinemaId, roomId, startTime } = await req.json();
 
-    // ✅ kiểm tra movie tồn tại
-    const movie = await Movie.findById(body.movie);
-    if (!movie) {
-      return NextResponse.json({ error: "Movie not found" }, { status: 404 });
+    if (!movieId || !cinemaId || !roomId || !startTime) {
+      return new Response(
+        JSON.stringify({ error: "Thiếu dữ liệu đầu vào" }),
+        { status: 400, headers: { "Content-Type": "application/json" } }
+      );
     }
 
+    // Kiểm tra movie tồn tại
+    const movie = await Movie.findById(movieId);
+    if (!movie) {
+      return new Response(JSON.stringify({ error: "Phim không tồn tại" }), {
+        status: 404,
+        headers: { "Content-Type": "application/json" },
+      });
+    }
+
+    // Kiểm tra cinema tồn tại
+    const cinema = await Cinema.findById(cinemaId);
+    if (!cinema) {
+      return new Response(JSON.stringify({ error: "Rạp không tồn tại" }), {
+        status: 404,
+        headers: { "Content-Type": "application/json" },
+      });
+    }
+
+    // Kiểm tra room tồn tại
+    const room = await Room.findById(roomId);
+    if (!room) {
+      return new Response(JSON.stringify({ error: "Phòng chiếu không tồn tại" }), {
+        status: 404,
+        headers: { "Content-Type": "application/json" },
+      });
+    }
+
+    // Tính giờ kết thúc dựa vào runtime phim
+    const start = new Date(startTime);
+    const end = new Date(start.getTime() + movie.runtime * 60000);
+
+    // ✅ Map đúng field schema (movie, cinema, room)
     const newShowtime = await Showtime.create({
-      movie: movie._id,
-      startTime: new Date(body.startTime),
-      room: body.room,
+      movie: movieId,
+      cinema: cinemaId,
+      room: roomId,
+      startTime: start,
+      endTime: end,
     });
 
-    return NextResponse.json(newShowtime);
+    return new Response(JSON.stringify(newShowtime), {
+      status: 201,
+      headers: { "Content-Type": "application/json" },
+    });
   } catch (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    console.error("❌ POST showtime error:", error);
+    return new Response(
+      JSON.stringify({ error: "Không thể tạo suất chiếu" }),
+      { status: 500, headers: { "Content-Type": "application/json" } }
+    );
   }
 }
