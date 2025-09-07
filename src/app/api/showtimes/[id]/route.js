@@ -8,7 +8,7 @@ import Room from "@/models/room";
 export async function PUT(req, { params }) {
   await dbConnect();
   try {
-    const { id } = params;
+    const { id } = await params;
     const { movieId, cinemaId, roomId, startTime } = await req.json();
 
     if (!movieId || !cinemaId || !roomId || !startTime) {

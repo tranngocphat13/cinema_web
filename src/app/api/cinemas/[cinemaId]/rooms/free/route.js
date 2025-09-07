@@ -1,71 +1,47 @@
+import { NextResponse } from "next/server";
 import dbConnect from "@/lib/mongodb";
-import Cinema from "@/models/cinema";
+import Room from "@/models/room";
 import Showtime from "@/models/showtimes";
 
-export async function POST(req, context) {
+export async function POST(req, { params }) {
   await dbConnect();
+
   try {
-    const { cinemaId } = await context.params;
+    const { cinemaId } = await params; // ✅ lấy cinemaId
     const { startTime, endTime } = await req.json();
 
     if (!startTime || !endTime) {
-      return new Response(
-        JSON.stringify({ error: "Thiếu thời gian bắt đầu hoặc kết thúc" }),
-        { status: 400, headers: { "Content-Type": "application/json" } }
+      return NextResponse.json(
+        { error: "Thiếu startTime hoặc endTime" },
+        { status: 400 }
       );
     }
 
-    const start = new Date(startTime);
-    const end = new Date(endTime);
+    // Lấy tất cả phòng của rạp đó
+    const rooms = await Room.find({ cinema: cinemaId });
 
-    if (isNaN(start.getTime()) || isNaN(end.getTime())) {
-      return new Response(
-        JSON.stringify({ error: "Thời gian không hợp lệ" }),
-        { status: 400, headers: { "Content-Type": "application/json" } }
-      );
-    }
+    // Lấy tất cả suất chiếu trong cùng khung giờ
+    const showtimes = await Showtime.find({
+      room: { $in: rooms.map((r) => r._id) },
+      $or: [
+        { startTime: { $lt: endTime }, endTime: { $gt: startTime } } // có overlap thời gian
+      ]
+    });
 
-    // ✅ Lấy rạp và populate rooms
-    const cinema = await Cinema.findById(cinemaId).populate("rooms");
-    if (!cinema) {
-      return new Response(
-        JSON.stringify({ error: "Không tìm thấy rạp" }),
-        { status: 404, headers: { "Content-Type": "application/json" } }
-      );
-    }
+    // Tìm các phòng đã có suất chiếu
+    const occupiedRoomIds = showtimes.map((s) => s.room.toString());
 
-    // ✅ Kiểm tra nếu rạp chưa có phòng nào
-    if (!cinema.rooms || cinema.rooms.length === 0) {
-      return new Response(JSON.stringify([]), {
-        status: 200,
-        headers: { "Content-Type": "application/json" },
-      });
-    }
-
-    // Tìm các suất chiếu bị overlap
-    const occupiedShowtimes = await Showtime.find({
-      cinema: cinemaId,
-      $or: [{ startTime: { $lt: end }, endTime: { $gt: start } }],
-    }).populate("room");
-
-    const occupiedRoomIds = occupiedShowtimes.map((s) =>
-      s.room?._id?.toString()
-    );
-
-    // ✅ Lọc ra phòng trống
-    const freeRooms = cinema.rooms.filter(
+    // Lọc ra phòng trống
+    const freeRooms = rooms.filter(
       (room) => !occupiedRoomIds.includes(room._id.toString())
     );
 
-    return new Response(JSON.stringify(freeRooms), {
-      status: 200,
-      headers: { "Content-Type": "application/json" },
-    });
+    return NextResponse.json(freeRooms);
   } catch (error) {
     console.error("❌ Error checking free rooms:", error);
-    return new Response(
-      JSON.stringify({ error: "Không thể kiểm tra phòng trống" }),
-      { status: 500, headers: { "Content-Type": "application/json" } }
+    return NextResponse.json(
+      { error: "Lỗi khi kiểm tra phòng trống" },
+      { status: 500 }
     );
   }
 }

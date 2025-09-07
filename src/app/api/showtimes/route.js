@@ -33,10 +33,10 @@ export async function POST(req) {
     const { movieId, cinemaId, roomId, startTime } = await req.json();
 
     if (!movieId || !cinemaId || !roomId || !startTime) {
-      return new Response(
-        JSON.stringify({ error: "Thiếu dữ liệu đầu vào" }),
-        { status: 400, headers: { "Content-Type": "application/json" } }
-      );
+      return new Response(JSON.stringify({ error: "Thiếu dữ liệu đầu vào" }), {
+        status: 400,
+        headers: { "Content-Type": "application/json" },
+      });
     }
 
     // Kiểm tra movie tồn tại
@@ -60,10 +60,13 @@ export async function POST(req) {
     // Kiểm tra room tồn tại
     const room = await Room.findById(roomId);
     if (!room) {
-      return new Response(JSON.stringify({ error: "Phòng chiếu không tồn tại" }), {
-        status: 404,
-        headers: { "Content-Type": "application/json" },
-      });
+      return new Response(
+        JSON.stringify({ error: "Phòng chiếu không tồn tại" }),
+        {
+          status: 404,
+          headers: { "Content-Type": "application/json" },
+        }
+      );
     }
 
     // Tính giờ kết thúc dựa vào runtime phim
@@ -71,6 +74,7 @@ export async function POST(req) {
     const end = new Date(start.getTime() + movie.runtime * 60000);
 
     // ✅ Map đúng field schema (movie, cinema, room)
+    // ✅ Tạo suất chiếu
     const newShowtime = await Showtime.create({
       movie: movieId,
       cinema: cinemaId,
@@ -79,15 +83,18 @@ export async function POST(req) {
       endTime: end,
     });
 
+    // ✅ Populate để trả về đầy đủ dữ liệu
+    await newShowtime.populate("movie cinema room");
+
     return new Response(JSON.stringify(newShowtime), {
       status: 201,
       headers: { "Content-Type": "application/json" },
     });
   } catch (error) {
     console.error("❌ POST showtime error:", error);
-    return new Response(
-      JSON.stringify({ error: "Không thể tạo suất chiếu" }),
-      { status: 500, headers: { "Content-Type": "application/json" } }
-    );
+    return new Response(JSON.stringify({ error: "Không thể tạo suất chiếu" }), {
+      status: 500,
+      headers: { "Content-Type": "application/json" },
+    });
   }
 }
