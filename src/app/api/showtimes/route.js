@@ -4,11 +4,37 @@ import Movie from "@/models/movies";
 import Cinema from "@/models/cinema";
 import Room from "@/models/room";
 
-// ✅ Lấy tất cả showtimes
-export async function GET() {
+// Lấy showtimes (filter theo movieId, cinemaId, roomId)
+export async function GET(req) {
   await dbConnect();
   try {
-    const showtimes = await Showtime.find()
+    const { searchParams } = new URL(req.url);
+    let movieId = searchParams.get("movieId");
+    const cinemaId = searchParams.get("cinemaId");
+    const roomId = searchParams.get("roomId");
+
+    const filter = {};
+
+    if (movieId) {
+      // Nếu movieId không phải ObjectId thì coi như tmdbId
+      const isObjectId = /^[0-9a-fA-F]{24}$/.test(movieId);
+      if (!isObjectId) {
+        const movie = await Movie.findOne({ tmdbId: Number(movieId) });
+        if (!movie) {
+          return new Response(JSON.stringify({ error: "Phim không tồn tại" }), {
+            status: 404,
+            headers: { "Content-Type": "application/json" },
+          });
+        }
+        movieId = movie._id; // chuyển sang _id
+      }
+      filter.movie = movieId;
+    }
+
+    if (cinemaId) filter.cinema = cinemaId;
+    if (roomId) filter.room = roomId;
+
+    const showtimes = await Showtime.find(filter)
       .populate("movie")
       .populate("cinema")
       .populate("room");
@@ -26,7 +52,7 @@ export async function GET() {
   }
 }
 
-// ✅ Tạo mới showtime
+// Tạo showtime
 export async function POST(req) {
   await dbConnect();
   try {
@@ -39,7 +65,7 @@ export async function POST(req) {
       });
     }
 
-    // Kiểm tra movie tồn tại
+    // check tồn tại
     const movie = await Movie.findById(movieId);
     if (!movie) {
       return new Response(JSON.stringify({ error: "Phim không tồn tại" }), {
@@ -48,7 +74,6 @@ export async function POST(req) {
       });
     }
 
-    // Kiểm tra cinema tồn tại
     const cinema = await Cinema.findById(cinemaId);
     if (!cinema) {
       return new Response(JSON.stringify({ error: "Rạp không tồn tại" }), {
@@ -57,24 +82,18 @@ export async function POST(req) {
       });
     }
 
-    // Kiểm tra room tồn tại
     const room = await Room.findById(roomId);
     if (!room) {
-      return new Response(
-        JSON.stringify({ error: "Phòng chiếu không tồn tại" }),
-        {
-          status: 404,
-          headers: { "Content-Type": "application/json" },
-        }
-      );
+      return new Response(JSON.stringify({ error: "Phòng chiếu không tồn tại" }), {
+        status: 404,
+        headers: { "Content-Type": "application/json" },
+      });
     }
 
-    // Tính giờ kết thúc dựa vào runtime phim
+    // tính giờ kết thúc
     const start = new Date(startTime);
     const end = new Date(start.getTime() + movie.runtime * 60000);
 
-    // ✅ Map đúng field schema (movie, cinema, room)
-    // ✅ Tạo suất chiếu
     const newShowtime = await Showtime.create({
       movie: movieId,
       cinema: cinemaId,
@@ -83,7 +102,6 @@ export async function POST(req) {
       endTime: end,
     });
 
-    // ✅ Populate để trả về đầy đủ dữ liệu
     await newShowtime.populate("movie cinema room");
 
     return new Response(JSON.stringify(newShowtime), {
