@@ -21,7 +21,7 @@ export default function NowPlayingPage() {
   if (!data) return <p className="text-center">Đang tải...</p>;
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-black via-green-900 to-black text-white px-8 py-12">
+    <div className="min-h-screen text-white px-8 py-12">
       <h1 className="text-center text-4xl font-bold mb-10">Now Showing</h1>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6 max-w-7xl mx-auto">

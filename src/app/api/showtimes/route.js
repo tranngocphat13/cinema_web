@@ -5,6 +5,7 @@ import Cinema from "@/models/cinema";
 import Room from "@/models/room";
 
 // Lấy showtimes (filter theo movieId, cinemaId, roomId)
+// Đồng thời xoá các suất chiếu đã hết hạn
 export async function GET(req) {
   await dbConnect();
   try {
@@ -34,6 +35,10 @@ export async function GET(req) {
     if (cinemaId) filter.cinema = cinemaId;
     if (roomId) filter.room = roomId;
 
+    // 🧹 Xoá suất chiếu đã hết hạn trước khi trả về
+    await Showtime.deleteMany({ endTime: { $lt: new Date() } });
+
+    // Lấy danh sách suất chiếu còn hạn
     const showtimes = await Showtime.find(filter)
       .populate("movie")
       .populate("cinema")
@@ -84,13 +89,16 @@ export async function POST(req) {
 
     const room = await Room.findById(roomId);
     if (!room) {
-      return new Response(JSON.stringify({ error: "Phòng chiếu không tồn tại" }), {
-        status: 404,
-        headers: { "Content-Type": "application/json" },
-      });
+      return new Response(
+        JSON.stringify({ error: "Phòng chiếu không tồn tại" }),
+        {
+          status: 404,
+          headers: { "Content-Type": "application/json" },
+        }
+      );
     }
 
-    // tính giờ kết thúc
+    // Tính giờ kết thúc = startTime + runtime phim
     const start = new Date(startTime);
     const end = new Date(start.getTime() + movie.runtime * 60000);
 

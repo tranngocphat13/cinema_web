@@ -27,11 +27,20 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+        className={`${geistSans.variable} ${geistMono.variable} antialiased relative min-h-screen`}
       >
-        <ClientProvider>
-          {children}
-        </ClientProvider>
+        {/* Background image */}
+        <div
+          className="absolute inset-0 bg-cover bg-center"
+          style={{
+            backgroundImage: "url('/images/background_ui.png')", // ảnh nằm trong /public
+          }}
+        />
+
+        {/* Nội dung app */}
+        <div className="relative z-10">
+          <ClientProvider>{children}</ClientProvider>
+        </div>
       </body>
     </html>
   );
