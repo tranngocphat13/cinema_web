@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import Image from "next/image";
 
 interface Cinema {
@@ -24,7 +24,7 @@ interface Seat {
 }
 
 interface Movie {
-  _id?: string;
+  _id?: string; // nếu API của bạn có _id thì sẽ dùng nó để query showtimes
   tmdbId: number;
   title: string;
   posterUrl?: string;
@@ -32,6 +32,7 @@ interface Movie {
 
 export default function MovieDetail() {
   const { id } = useParams<{ id: string }>();
+  const router = useRouter();
 
   const [movie, setMovie] = useState<Movie | null>(null);
   const [cinemas, setCinemas] = useState<Cinema[]>([]);
@@ -59,12 +60,26 @@ export default function MovieDetail() {
     return seat ? sum + ticketPrices[seat.type] : sum;
   }, 0);
 
+  // Helper: chuẩn hoá payload showtimes về mảng
+  function normalizeShowtimesPayload(payload: unknown): Showtime[] {
+    if (Array.isArray(payload)) return payload as Showtime[];
+    if (payload && typeof payload === "object") {
+      const p = payload as Record<string, unknown>;
+      if (Array.isArray(p.showtimes)) return p.showtimes as Showtime[];
+      if (Array.isArray(p.data)) return p.data as Showtime[];
+    }
+    return [];
+  }
+
   // Load movie
   useEffect(() => {
     fetch(`/api/movies/${id}`)
       .then((res) => res.json())
       .then(setMovie)
-      .catch(console.error);
+      .catch((e) => {
+        console.error("GET /api/movies/:id error:", e);
+        setMovie(null);
+      });
   }, [id]);
 
   // Load cinemas
@@ -72,34 +87,64 @@ export default function MovieDetail() {
     fetch(`/api/cinemas`)
       .then((res) => res.json())
       .then(setCinemas)
-      .catch(console.error);
+      .catch((e) => console.error("GET /api/cinemas error:", e));
   }, []);
 
   // Load showtimes khi chọn cinema
   useEffect(() => {
-    if (selectedCinemaId && movie) {
-      fetch(
-        `/api/showtimes?movieId=${movie.tmdbId}&cinemaId=${selectedCinemaId}`
-      )
-        .then((res) => res.json())
-        .then((data: Showtime[]) => {
-          setShowtimes(data);
-          // Lấy danh sách ngày từ showtimes
-          const uniqueDates = Array.from(
-            new Set(data.map((st) => new Date(st.startTime).toDateString()))
-          );
-          setDates(uniqueDates);
-        })
-        .catch(console.error);
-    }
+    const run = async () => {
+      if (!selectedCinemaId || !movie) return;
+
+      // Ưu tiên dùng movie._id nếu có; nếu không có, fallback dùng tmdbId (đồng bộ với API của bạn)
+      const queryParam = movie._id
+        ? `movieId=${encodeURIComponent(movie._id)}`
+        : `tmdbId=${encodeURIComponent(String(movie.tmdbId))}`;
+
+      const url = `/api/showtimes?${queryParam}&cinemaId=${encodeURIComponent(
+        selectedCinemaId
+      )}`;
+      const res = await fetch(url);
+
+      if (!res.ok) {
+        const txt = await res.text();
+        console.error("GET /api/showtimes failed:", res.status, txt);
+        setShowtimes([]);
+        setDates([]);
+        return;
+      }
+
+      const payload = await res.json();
+      // Bạn có thể mở log này khi cần xem server trả gì:
+      // console.log("Showtimes payload:", payload);
+
+      const arr = normalizeShowtimesPayload(payload);
+      setShowtimes(arr);
+
+      const uniqueDates = Array.from(
+        new Set(arr.map((st) => new Date(st.startTime).toDateString()))
+      );
+      setDates(uniqueDates);
+    };
+
+    run().catch((e) => {
+      console.error("Load showtimes error:", e);
+      setShowtimes([]);
+      setDates([]);
+    });
   }, [selectedCinemaId, movie]);
 
-  // Load seats khi chọn suất chiếu
-  const fetchSeats = async (cinemaId: string, roomId: string) => {
+  // Tải ghế THEO SUẤT CHIẾU
+  const fetchSeatsByShowtime = async (showtimeId: string) => {
     try {
-      const res = await fetch(`/api/cinemas/${cinemaId}/rooms/${roomId}/seats`);
-      const data: Seat[] = await res.json();
-      setSeats(data);
+      const res = await fetch(`/api/showtimes/${showtimeId}/seats`);
+      if (!res.ok) {
+        console.error("GET /api/showtimes/:id/seats failed:", res.status);
+        setSeats([]);
+        return;
+      }
+      const data: unknown = await res.json();
+      const arr = Array.isArray(data) ? (data as Seat[]) : [];
+      setSeats(arr);
     } catch (err) {
       console.error(err);
       setSeats([]);
@@ -113,6 +158,27 @@ export default function MovieDetail() {
         ? prev.filter((s) => s !== seatId)
         : [...prev, seatId]
     );
+  };
+
+  // Giữ ghế 5 phút (tuỳ chọn trước khi thanh toán)
+  const handleHoldSeats = async () => {
+    if (!selectedShowtimeId || selectedSeats.length === 0) return;
+    const res = await fetch("/api/hold-seat", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        showtimeId: selectedShowtimeId,
+        seatIds: selectedSeats,
+      }),
+    });
+    const data = await res.json();
+    if (data?.ok) {
+      alert("Đã giữ ghế 5 phút. Hãy thanh toán trong thời gian này.");
+    } else {
+      alert(data?.error || "Không thể giữ ghế");
+      // reload lại để phản ánh trạng thái mới nhất
+      fetchSeatsByShowtime(selectedShowtimeId);
+    }
   };
 
   if (!movie)
@@ -135,6 +201,7 @@ export default function MovieDetail() {
                     setSelectedDate(null);
                     setSelectedShowtimeId(null);
                     setSeats([]);
+                    setSelectedSeats([]);
                   }}
                   className={`px-6 py-3 rounded-full border-2 flex items-center gap-2 transition ${
                     selectedCinemaId === c._id
@@ -160,6 +227,7 @@ export default function MovieDetail() {
                       setSelectedDate(date);
                       setSelectedShowtimeId(null);
                       setSeats([]);
+                      setSelectedSeats([]);
                     }}
                     className={`w-[90px] py-3 rounded-lg border-2 transition ${
                       selectedDate === date
@@ -190,9 +258,7 @@ export default function MovieDetail() {
                   .map((st) => {
                     const now = new Date();
                     const start = new Date(st.startTime);
-                    const end = new Date(
-                      start.getTime() + 2 * 60 * 60 * 1000
-                    ); // giả sử phim dài 2h
+                    const end = new Date(start.getTime() + 2 * 60 * 60 * 1000);
 
                     const isOngoing = now >= start && now < end;
                     const isPast = now >= end;
@@ -204,7 +270,9 @@ export default function MovieDetail() {
                         onClick={() => {
                           if (!isOngoing && !isPast) {
                             setSelectedShowtimeId(st._id);
-                            fetchSeats(st.cinema._id, st.room._id);
+                            setSelectedSeats([]);
+                            // dùng endpoint seats theo SHOWTIME
+                            fetchSeatsByShowtime(st._id);
                           }
                         }}
                         className={`px-5 py-3 rounded-lg border-2 transition ${
@@ -225,19 +293,6 @@ export default function MovieDetail() {
                     );
                   })}
               </div>
-              {/* Legend */}
-              <div className="mt-4 flex gap-6 text-sm text-gray-300">
-                <div className="flex items-center gap-2">
-                  <span className="w-4 h-4 bg-green-500 rounded"></span> Có thể
-                  đặt
-                </div>
-                <div className="flex items-center gap-2">
-                  <span className="w-4 h-4 bg-gray-500 rounded"></span> Đang chiếu
-                </div>
-                <div className="flex items-center gap-2">
-                  <span className="w-4 h-4 bg-gray-700 rounded"></span> Đã chiếu
-                </div>
-              </div>
             </div>
           )}
 
@@ -249,7 +304,7 @@ export default function MovieDetail() {
               {(() => {
                 const groupedSeats: Record<string, Seat[]> = seats.reduce(
                   (acc, seat) => {
-                    const row = seat.number.charAt(0); // Ví dụ: A1 -> "A"
+                    const row = seat.number.charAt(0);
                     if (!acc[row]) acc[row] = [];
                     acc[row].push(seat);
                     return acc;
@@ -257,7 +312,6 @@ export default function MovieDetail() {
                   {} as Record<string, Seat[]>
                 );
 
-                // Sắp xếp ghế trong từng hàng theo số
                 Object.keys(groupedSeats).forEach((row) => {
                   groupedSeats[row].sort((a, b) => {
                     const numA = parseInt(a.number.slice(1));
@@ -273,12 +327,9 @@ export default function MovieDetail() {
                         key={row}
                         className="flex gap-2 items-center justify-center"
                       >
-                        {/* Label hàng */}
                         <span className="w-6 font-bold text-gray-300">
                           {row}
                         </span>
-
-                        {/* Các ghế trong hàng */}
                         <div className="flex gap-2">
                           {rowSeats.map((seat) => (
                             <button
@@ -286,17 +337,17 @@ export default function MovieDetail() {
                               disabled={!seat.isAvailable}
                               onClick={() => toggleSeat(seat._id)}
                               className={`w-12 h-12 rounded-md font-semibold transition
-                  ${
-                    !seat.isAvailable
-                      ? "bg-gray-600 cursor-not-allowed"
-                      : selectedSeats.includes(seat._id)
-                      ? "bg-green-500 text-white"
-                      : seat.type === "vip"
-                      ? "bg-yellow-400 text-black"
-                      : seat.type === "couple"
-                      ? "bg-pink-500 text-white"
-                      : "bg-white text-black"
-                  }`}
+                                ${
+                                  !seat.isAvailable
+                                    ? "bg-gray-600 cursor-not-allowed"
+                                    : selectedSeats.includes(seat._id)
+                                    ? "bg-green-500 text-white"
+                                    : seat.type === "vip"
+                                    ? "bg-yellow-400 text-black"
+                                    : seat.type === "couple"
+                                    ? "bg-pink-500 text-white"
+                                    : "bg-white text-black"
+                                }`}
                             >
                               {seat.number}
                             </button>
@@ -308,14 +359,67 @@ export default function MovieDetail() {
                 );
               })()}
 
+              {/* Thanh hành động */}
               {selectedSeats.length > 0 && (
-                <div className="mt-6 flex justify-between items-center p-4 bg-gray-900 rounded-xl">
+                <div className="mt-6 flex flex-wrap gap-3 justify-between items-center p-4 bg-gray-900 rounded-xl">
                   <p className="text-lg font-bold">
                     Tổng tiền: {totalPrice.toLocaleString()}đ
                   </p>
-                  <button className="bg-green-500 px-6 py-3 rounded-lg font-semibold hover:bg-green-600 transition">
-                    Xác nhận
-                  </button>
+
+                  <div className="flex gap-3">
+                    <button
+                      onClick={handleHoldSeats}
+                      className="bg-blue-500 px-5 py-3 rounded-lg font-semibold hover:bg-blue-600 transition"
+                    >
+                      Giữ ghế 5 phút
+                    </button>
+
+                    <button
+                      onClick={() => {
+                        if (!movie || !selectedShowtimeId || !selectedDate)
+                          return;
+
+                        const selectedShowtime = showtimes.find(
+                          (st) => st._id === selectedShowtimeId
+                        );
+                        const time = selectedShowtime
+                          ? new Date(
+                              selectedShowtime.startTime
+                            ).toLocaleTimeString("vi-VN", {
+                              hour: "2-digit",
+                              minute: "2-digit",
+                            })
+                          : "";
+
+                        const seatNumbers = selectedSeats
+                          .map((id) => seats.find((s) => s._id === id)?.number)
+                          .filter(Boolean)
+                          .join(",");
+
+                        // thêm seatIds để trang thanh toán gọi API
+                        const seatIdsParam = selectedSeats.join(",");
+
+                        router.push(
+                          `/user/booking/detail?movieTitle=${encodeURIComponent(
+                            movie.title
+                          )}&movieId=${encodeURIComponent(
+                            String(id)
+                          )}&date=${encodeURIComponent(
+                            selectedDate
+                          )}&time=${encodeURIComponent(
+                            time
+                          )}&seats=${encodeURIComponent(
+                            seatNumbers
+                          )}&seatIds=${encodeURIComponent(
+                            seatIdsParam
+                          )}&total=${totalPrice}&showtimeId=${selectedShowtimeId}`
+                        );
+                      }}
+                      className="bg-green-500 px-6 py-3 rounded-lg font-semibold hover:bg-green-600 transition"
+                    >
+                      Xác nhận
+                    </button>
+                  </div>
                 </div>
               )}
             </div>
@@ -325,7 +429,7 @@ export default function MovieDetail() {
         {/* RIGHT: Poster phim */}
         <div className="space-y-6">
           <div className="relative w-full h-[500px] rounded-xl overflow-hidden shadow-lg">
-            {movie.posterUrl && (
+            {movie?.posterUrl && (
               <Image
                 src={movie.posterUrl}
                 alt={movie.title}
@@ -334,7 +438,7 @@ export default function MovieDetail() {
               />
             )}
           </div>
-          <h2 className="text-2xl font-bold">{movie.title}</h2>
+          <h2 className="text-2xl font-bold">{movie?.title}</h2>
         </div>
       </div>
     </div>

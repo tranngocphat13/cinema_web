@@ -31,6 +31,7 @@
     "nodemailer": "^6.10.1",
     "qrcode": "^1.5.4",
     "qrcode.react": "^4.2.0",
+    "qs": "^6.14.0",
     "react": "19.1.0",
     "react-dom": "19.1.0",
     "react-player": "^3.3.1",
