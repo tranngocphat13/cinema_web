@@ -2,7 +2,13 @@
 
 import { useEffect, useState } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
-import { CheckCircle } from "lucide-react"; // hoặc Heroicons CheckCircleIcon
+import { CheckCircle } from "lucide-react";
+
+type VnpReturnResponse = {
+  message: string;
+  bookingId?: string;
+  amount?: number;
+};
 
 export default function VnpayReturnPage() {
   const searchParams = useSearchParams();
@@ -10,6 +16,7 @@ export default function VnpayReturnPage() {
   const [loading, setLoading] = useState(true);
   const [success, setSuccess] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
+  const [bookingId, setBookingId] = useState<string | null>(null);
 
   useEffect(() => {
     async function verify() {
@@ -18,10 +25,11 @@ export default function VnpayReturnPage() {
         if (!query) return;
 
         const res = await fetch(`/api/vnpay/return?${query}`);
-        const data = await res.json();
+        const data: VnpReturnResponse = await res.json();
 
-        if (res.ok && data.message?.includes("thành công")) {
+        if (res.ok && data.message?.toLowerCase().includes("thành công")) {
           setSuccess(true);
+          if (data.bookingId) setBookingId(data.bookingId);
         } else {
           setErrorMsg(data.message || "Thanh toán thất bại");
         }
@@ -63,10 +71,11 @@ export default function VnpayReturnPage() {
     <main className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-black via-green-950 to-black text-white px-6">
       <h1 className="text-2xl font-bold mb-6">Payment Success</h1>
       <CheckCircle className="w-24 h-24 text-green-400 mb-8" />
-
       <div className="flex flex-col space-y-4">
         <button
-          onClick={() => router.push("/user/tickets")} // Trang hiển thị vé
+          onClick={() =>
+            router.push(bookingId ? `/user/tickets/${bookingId}` : "/user/tickets")
+          }
           className="w-48 bg-green-500 hover:bg-green-600 text-black font-semibold py-3 rounded-lg transition"
         >
           View Ticket

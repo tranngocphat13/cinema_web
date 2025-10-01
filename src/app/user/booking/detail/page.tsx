@@ -81,6 +81,7 @@ export default function BookingDetail() {
   }
 
   /** Thanh toán thật qua VNPAY */
+  /** Thanh toán thật qua VNPAY */
   async function handleVnpayPay(): Promise<void> {
     if (!showtimeId || !seatIds || !total) {
       alert("Thiếu dữ liệu thanh toán");
@@ -88,17 +89,30 @@ export default function BookingDetail() {
     }
     try {
       setLoadingVnpay(true);
-      const res = await fetch("/api/vnpay/create", {
+      const seatIdArr = seatIds.split(",").filter(Boolean);
+
+      const res = await fetch("/api/checkout/start-vnpay", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          amount: total,
-          bookingId: showtimeId, // hoặc _id booking thật
+          showtimeId,
+          seatIds: seatIdArr,
+          total,
+          ticketType: "normal",
+          customer: {
+            name: "Người dùng",
+            phone: "0900000000",
+            email: "user@example.com",
+          },
         }),
       });
+
       const data = await res.json();
-      if (data.payUrl) window.location.href = data.payUrl;
-      else alert(data.error || "Không tạo được URL thanh toán");
+      if (data.payUrl) {
+        window.location.href = data.payUrl; // 🔗 chuyển qua VNPAY
+      } else {
+        alert(data.error || "Không tạo được URL thanh toán");
+      }
     } catch (e: unknown) {
       const msg = e instanceof Error ? e.message : "Lỗi VNPAY không xác định";
       alert(msg);

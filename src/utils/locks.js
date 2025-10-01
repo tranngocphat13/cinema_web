@@ -2,7 +2,8 @@
 import Hold from "@/models/holdseat";
 import Booking from "@/models/booking";
 
-/** Trả về Set<string> các seatId đang bị khóa
+/**
+ * Trả về Set<string> các seatId đang bị khóa:
  *  - Hold còn hạn (status:"hold", expireAt > now)
  *  - Booking ở trạng thái "pending" hoặc "paid"
  */
@@ -23,5 +24,6 @@ export async function getLockedSeatIds(showtimeId) {
   const locked = new Set();
   for (const h of holds) locked.add(String(h.seat));
   for (const b of bookings) for (const sid of b.seats) locked.add(String(sid));
+
   return locked;
 }

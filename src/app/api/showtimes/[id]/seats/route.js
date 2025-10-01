@@ -13,11 +13,13 @@ export async function GET(_req, ctx) {
   try {
     await connectDB();
 
-    // ✅ await params trước khi dùng
     const { id: showtimeId } = await ctx.params;
-
     const st = await Showtime.findById(showtimeId).populate("room");
-    if (!st) return NextResponse.json({ error: "Showtime not found" }, { status: 404 });
+    if (!st)
+      return NextResponse.json(
+        { error: "Showtime not found" },
+        { status: 404 }
+      );
 
     const seats = await Seat.find({ room: st.room._id }).lean();
     const locked = await getLockedSeatIds(showtimeId);
@@ -34,6 +36,9 @@ export async function GET(_req, ctx) {
     return NextResponse.json(payload);
   } catch (e) {
     console.error("GET /api/showtimes/[id]/seats error:", e);
-    return NextResponse.json({ error: e?.message || "Internal error" }, { status: 500 });
+    return NextResponse.json(
+      { error: e?.message || "Internal error" },
+      { status: 500 }
+    );
   }
 }

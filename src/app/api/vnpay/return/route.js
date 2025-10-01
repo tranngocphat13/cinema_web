@@ -1,49 +1,43 @@
+// src/app/api/vnpay/return/route.js
 import { NextResponse } from "next/server";
+import connectDB from "@/lib/mongodb";
+import Booking from "@/models/booking";
+import Hold from "@/models/holdseat";
 import { verifyVnpReturn } from "@/lib/vnpay";
-
-export const runtime = "nodejs";
 
 export async function GET(req) {
   try {
     const { searchParams } = new URL(req.url);
-    const params = {};
-    for (const [key, value] of searchParams.entries()) {
-      params[key] = value;
-    }
+    const params = Object.fromEntries(searchParams.entries());
 
-    // Xác minh chữ ký
-    const { isValid, params: sorted, received, calc } = verifyVnpReturn(params);
-
+    const { isValid, params: sorted } = verifyVnpReturn(params);
     if (!isValid) {
+      return NextResponse.json({ message: "Chữ ký không hợp lệ" }, { status: 400 });
+    }
+
+    await connectDB();
+    const bookingId = sorted.vnp_TxnRef.split("-")[0]; // lấy ObjectId trước dấu "-"
+    const booking = await Booking.findById(bookingId);
+    if (!booking)
       return NextResponse.json(
-        { message: "Chữ ký không hợp lệ", received, calc },
-        { status: 400 }
+        { message: "Không tìm thấy đơn đặt chỗ" },
+        { status: 404 }
       );
-    }
 
-    // Thanh toán thành công
     if (sorted.vnp_ResponseCode === "00" && sorted.vnp_TransactionStatus === "00") {
-      // TODO: cập nhật DB đơn hàng với sorted.vnp_TxnRef nếu cần
-      return NextResponse.json({
-        message: "Thanh toán thành công",
-        txnRef: sorted.vnp_TxnRef,
-        amount: Number(sorted.vnp_Amount) / 100,
-      });
+      booking.status = "paid";
+      await booking.save();
+      await Hold.deleteMany({ booking: booking._id }); // xoá hold => ghế chính thức bị khoá
+      return NextResponse.json({ message: "Thanh toán thành công", bookingId: booking._id });
     }
 
-    // Thanh toán thất bại
-    return NextResponse.json(
-      {
-        message: `Thanh toán thất bại (Mã: ${sorted.vnp_ResponseCode})`,
-        txnRef: sorted.vnp_TxnRef,
-      },
-      { status: 400 }
-    );
-  } catch (err) {
-    console.error("Return error:", err);
-    return NextResponse.json(
-      { message: "Lỗi xử lý kết quả VNPAY", error: err.message },
-      { status: 500 }
-    );
+    // Nếu thất bại: huỷ booking + mở ghế
+    booking.status = "canceled";
+    await booking.save();
+    await Hold.deleteMany({ booking: booking._id });
+    return NextResponse.json({ message: "Thanh toán thất bại" }, { status: 400 });
+  } catch (e) {
+    console.error("Return error:", e);
+    return NextResponse.json({ message: "Lỗi xử lý VNPAY", error: e.message }, { status: 500 });
   }
 }

@@ -3,11 +3,9 @@ import connectDB from "@/lib/mongodb";
 import Hold from "@/models/holdseat";
 import Showtime from "@/models/showtimes";
 import Seat from "@/models/seat";
-import Booking from "@/models/booking";
 import { getLockedSeatIds } from "@/utils/locks";
 
 const HOLD_MINUTES = Number(process.env.HOLD_MINUTES || 5);
-
 function getExpireAt() {
   const d = new Date();
   d.setMinutes(d.getMinutes() + HOLD_MINUTES);
@@ -17,7 +15,7 @@ function getExpireAt() {
 export async function POST(req) {
   try {
     await connectDB();
-    const { showtimeId, seatIds } = await req.json();
+    const { showtimeId, seatIds, bookingId } = await req.json();
     if (!showtimeId || !Array.isArray(seatIds) || !seatIds.length) {
       return NextResponse.json({ error: "Thiếu dữ liệu" }, { status: 400 });
     }
@@ -27,23 +25,30 @@ export async function POST(req) {
 
     const seats = await Seat.find({ _id: { $in: seatIds }, room: st.room });
     if (seats.length !== seatIds.length) {
-      return NextResponse.json({ error: "Có ghế không thuộc phòng của suất chiếu" }, { status: 400 });
+      return NextResponse.json({ error: "Ghế không hợp lệ" }, { status: 400 });
     }
 
+    // check locked seats
     const locked = await getLockedSeatIds(showtimeId);
-    const conflicts = seatIds.filter((id) => locked.has(String(id)));
+    const conflicts = seatIds.filter(id => locked.has(String(id)));
     if (conflicts.length) {
       return NextResponse.json({ error: "Một số ghế đã bị giữ/đặt", conflicts }, { status: 409 });
     }
 
     const expireAt = getExpireAt();
-    const docs = seatIds.map((seat) => ({ showtime: showtimeId, seat, status: "hold", expireAt }));
+    const docs = seatIds.map(seat => ({
+      showtime: showtimeId,
+      seat,
+      status: "hold",
+      expireAt,
+      booking: bookingId || null,
+    }));
     const holds = await Hold.insertMany(docs);
 
     return NextResponse.json({
       ok: true,
       expireAt,
-      holds: holds.map((h) => ({ _id: String(h._id), seat: String(h.seat), expireAt: h.expireAt })),
+      holds: holds.map(h => ({ _id: h._id.toString(), seat: h.seat.toString() })),
     });
   } catch (e) {
     console.error("hold-seat POST error:", e);
