@@ -1,7 +1,7 @@
 export const runtime = "nodejs";
 
 import { NextResponse } from "next/server";
-import { verifyVnpayReturn } from "@/lib/vnpay";
+import { verifyVnpReturn } from "@/lib/vnpay";
 import connectDB from "@/lib/mongodb";
 import Booking from "@/models/booking";
 
@@ -10,7 +10,7 @@ export async function GET(req) {
     const url = new URL(req.url);
     const raw = Object.fromEntries(url.searchParams.entries());
 
-    const { isValid, params, signBase, received, calc } = verifyVnpayReturn(raw);
+    const { isValid, params, signBase, received, calc } = verifyVnpReturn(raw);
 
     if (!isValid) {
       console.error("VNPAY IPN checksum mismatch", { received, calc, signBase, params });

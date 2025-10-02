@@ -9,7 +9,7 @@ if (!MONGODB_URI) {
 
 let isConnected = false;
 
-export default async function connectDB() {
+export async function connectDB() {
   if (isConnected) return mongoose;
 
   try {
