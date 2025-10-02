@@ -1,5 +1,6 @@
 "use client";
 
+import { useSession } from "next-auth/react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { useState } from "react";
 
@@ -17,6 +18,7 @@ type CheckoutStartResponse =
     };
 
 export default function BookingDetail() {
+  const { data: session } = useSession(); // ✅ lấy thông tin user đã login
   const searchParams = useSearchParams();
   const router = useRouter();
 
@@ -27,6 +29,7 @@ export default function BookingDetail() {
   const seatIds = searchParams.get("seatIds") ?? "";
   const total = Number(searchParams.get("total") ?? "0");
   const showtimeId = searchParams.get("showtimeId") ?? "";
+  const ticketType = searchParams.get("ticketType") ?? "normal"; // ✅ lấy từ query
 
   const [loadingDev, setLoadingDev] = useState(false);
   const [loadingVnpay, setLoadingVnpay] = useState(false);
@@ -48,12 +51,11 @@ export default function BookingDetail() {
           showtimeId,
           seatIds: seatIdArr,
           total,
-          ticketType: "normal",
+          ticketType,
           paymentMethod: "dev-auto",
           customer: {
-            name: "Khách DEV",
-            phone: "0900000000",
-            email: "dev@example.com",
+            name: session?.user?.name || "Khách DEV",
+            email: session?.user?.email || "dev@example.com",
           },
         }),
       });
@@ -81,7 +83,6 @@ export default function BookingDetail() {
   }
 
   /** Thanh toán thật qua VNPAY */
-  /** Thanh toán thật qua VNPAY */
   async function handleVnpayPay(): Promise<void> {
     if (!showtimeId || !seatIds || !total) {
       alert("Thiếu dữ liệu thanh toán");
@@ -98,11 +99,10 @@ export default function BookingDetail() {
           showtimeId,
           seatIds: seatIdArr,
           total,
-          ticketType: "normal",
+          ticketType,
           customer: {
-            name: "Người dùng",
-            phone: "0900000000",
-            email: "user@example.com",
+            name: session?.user?.name || "Người dùng",
+            email: session?.user?.email || "user@example.com",
           },
         }),
       });
@@ -159,6 +159,19 @@ export default function BookingDetail() {
             <span className="text-sm text-gray-400">Mã suất chiếu</span>
             <span className="font-mono">{showtimeId}</span>
           </div>
+          <div className="flex justify-between">
+            <span className="text-sm text-gray-400">Loại vé</span>
+            <span className="font-medium">{ticketType}</span>
+          </div>
+          <div className="flex justify-between">
+            <span className="text-sm text-gray-400">Khách hàng</span>
+            <span className="font-medium">{session?.user?.name}</span>
+          </div>
+          <div className="flex justify-between">
+            <span className="text-sm text-gray-400">Email</span>
+            <span className="font-medium">{session?.user?.email}</span>
+          </div>
+
           <div className="border-t border-gray-700 pt-3 flex justify-between font-bold text-yellow-400">
             <span>Tổng thanh toán</span>
             <span>{total.toLocaleString()}đ</span>

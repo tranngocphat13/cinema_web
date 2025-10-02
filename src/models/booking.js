@@ -29,7 +29,7 @@ const BookingSchema = new mongoose.Schema(
       enum: ["momo", "vnpay", "cash", "dev-auto"],
       default: "vnpay",
     },
-    customer: { name: String, phone: String, email: String },
+    customer: { name: String, email: String },
   },
   { timestamps: true }
 );

@@ -4,28 +4,39 @@ import connectDB from "@/lib/mongodb";
 import Booking from "@/models/booking";
 import Hold from "@/models/holdseat";
 import { buildVnpayUrl } from "@/lib/vnpay";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/authOptions";
 
 export async function POST(req) {
   try {
-    const { showtimeId, seatIds, total, ticketType, customer } =
-      await req.json();
+    const session = await getServerSession(authOptions);
+
+    if (!session) {
+      return NextResponse.json({ error: "Bạn cần đăng nhập để đặt vé" }, { status: 401 });
+    }
+
+    const { showtimeId, seatIds, total, ticketType } = await req.json();
     if (!showtimeId || !seatIds?.length || !total) {
       return NextResponse.json({ error: "Thiếu dữ liệu" }, { status: 400 });
     }
 
     await connectDB();
 
-    // 1. Tạo booking pending
+    // ✅ Tạo booking pending kèm thông tin user từ session
     const booking = await Booking.create({
       showtime: showtimeId,
       seats: seatIds,
       ticketType: ticketType || "normal",
       total,
-      customer,
+      customer: {
+        name: session.user.name,
+        email: session.user.email,
+      },
       status: "pending",
+      paymentMethod: "vnpay",
     });
 
-    // 2. Giữ ghế 5 phút
+    // Giữ ghế 5 phút
     const expireAt = new Date(Date.now() + 5 * 60 * 1000);
     await Hold.insertMany(
       seatIds.map((id) => ({
@@ -37,7 +48,7 @@ export async function POST(req) {
       }))
     );
 
-    // 3. Tạo URL thanh toán
+    // Tạo URL thanh toán VNPAY
     const ip =
       (req.headers.get("x-forwarded-for") ||
         req.headers.get("x-real-ip") ||
@@ -45,8 +56,8 @@ export async function POST(req) {
 
     const { redirectUrl } = buildVnpayUrl({
       amount: booking.total,
-      orderId: booking._id.toString(), // dùng ObjectId làm TxnRef
-      orderInfo: `Thanh toan ve xem phim - Booking ${booking._id}`,
+      orderId: booking._id.toString(),
+      orderInfo: `Thanh toán vé xem phim - Booking ${booking._id}`,
       ipAddr: ip,
     });
 

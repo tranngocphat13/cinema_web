@@ -396,6 +396,11 @@ export default function MovieDetail() {
                           .filter(Boolean)
                           .join(",");
 
+                        // ✅ lấy loại ghế từ ghế đầu tiên (nếu nhiều loại thì bạn tự xử lý thêm)
+                        const firstSeat = seats.find(
+                          (s) => s._id === selectedSeats[0]
+                        );
+                        const ticketType = firstSeat?.type || "normal";
                         // thêm seatIds để trang thanh toán gọi API
                         const seatIdsParam = selectedSeats.join(",");
 
@@ -412,7 +417,7 @@ export default function MovieDetail() {
                             seatNumbers
                           )}&seatIds=${encodeURIComponent(
                             seatIdsParam
-                          )}&total=${totalPrice}&showtimeId=${selectedShowtimeId}`
+                          )}&total=${totalPrice}&showtimeId=${selectedShowtimeId}&ticketType=${ticketType}`
                         );
                       }}
                       className="bg-green-500 px-6 py-3 rounded-lg font-semibold hover:bg-green-600 transition"

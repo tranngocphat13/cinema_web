@@ -14,7 +14,10 @@ export default function Navbar() {
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (userMenuRef.current && !userMenuRef.current.contains(event.target as Node)) {
+      if (
+        userMenuRef.current &&
+        !userMenuRef.current.contains(event.target as Node)
+      ) {
         setUserMenuOpen(false);
       }
     };
@@ -26,15 +29,26 @@ export default function Navbar() {
     <nav className="bg-white shadow-md sticky top-0 z-50">
       <div className="max-w-7xl mx-auto px-6 py-4 flex justify-between items-center">
         {/* Logo */}
-        <Link href="/" className="text-2xl font-extrabold text-green-600 tracking-wide">
+        <Link
+          href="/"
+          className="text-2xl font-extrabold text-green-600 tracking-wide"
+        >
           MyCinema
         </Link>
 
         {/* Menu Desktop */}
         <div className="hidden md:flex items-center space-x-8 font-medium">
-          <Link href="/" className="hover:text-green-500 transition-colors">Trang chủ</Link>
-          <Link href="/schedule" className="hover:text-green-500 transition-colors">Lịch chiếu</Link>
-          <Link href="/booking" className="hover:text-green-500 transition-colors">Đặt vé</Link>
+          <Link href="/" className="hover:text-green-500 transition-colors">
+            Trang chủ
+          </Link>
+          {session && (
+            <Link
+              href="/user/tickets"
+              className="hover:text-green-500 transition-colors"
+            >
+              Vé của tôi
+            </Link>
+          )}
         </div>
 
         {/* User Menu Desktop */}
@@ -51,8 +65,17 @@ export default function Navbar() {
               </button>
               {userMenuOpen && (
                 <div className="absolute right-0 mt-2 w-48 bg-white border rounded-xl shadow-lg">
-                  <Link href="/profile" className="block px-4 py-2 hover:bg-gray-100">
+                  <Link
+                    href="/profile"
+                    className="block px-4 py-2 hover:bg-gray-100"
+                  >
                     Tài khoản
+                  </Link>
+                  <Link
+                    href="/user/tickets"
+                    className="block px-4 py-2 hover:bg-gray-100"
+                  >
+                    Vé của tôi
                   </Link>
                   <button
                     onClick={() => signOut({ callbackUrl: "/" })}
@@ -94,13 +117,15 @@ export default function Navbar() {
       {isMenuOpen && (
         <div className="md:hidden bg-white border-t shadow-lg animate-fadeIn">
           <div className="flex flex-col space-y-4 p-4">
-            <Link href="/" className="hover:text-green-500">Trang chủ</Link>
-            <Link href="/schedule" className="hover:text-green-500">Lịch chiếu</Link>
-            <Link href="/booking" className="hover:text-green-500">Đặt vé</Link>
+            <Link href="/" className="hover:text-green-500">
+              Trang chủ
+            </Link>
 
             {session ? (
               <>
-                <span className="font-semibold text-gray-700">Xin chào, {userName}</span>
+                <span className="font-semibold text-gray-700">
+                  Xin chào, {userName}
+                </span>
                 <Link
                   href="/profile"
                   className="px-4 py-2 border rounded-lg text-center hover:bg-gray-100"
@@ -108,7 +133,7 @@ export default function Navbar() {
                   Tài khoản
                 </Link>
                 <Link
-                  href="/profile"
+                  href="/user/tickets"
                   className="px-4 py-2 border rounded-lg text-center hover:bg-gray-100"
                 >
                   Vé của tôi

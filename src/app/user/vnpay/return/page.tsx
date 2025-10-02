@@ -69,7 +69,7 @@ export default function VnpayReturnPage() {
 
   return (
     <main className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-black via-green-950 to-black text-white px-6">
-      <h1 className="text-2xl font-bold mb-6">Payment Success</h1>
+      <h1 className="text-2xl font-bold mb-6">Thanh toán thành công</h1>
       <CheckCircle className="w-24 h-24 text-green-400 mb-8" />
       <div className="flex flex-col space-y-4">
         <button
@@ -78,13 +78,13 @@ export default function VnpayReturnPage() {
           }
           className="w-48 bg-green-500 hover:bg-green-600 text-black font-semibold py-3 rounded-lg transition"
         >
-          View Ticket
+          Vé của tôi
         </button>
         <button
           onClick={() => router.push("/")}
           className="w-48 border border-gray-400 hover:bg-gray-700 font-semibold py-3 rounded-lg transition"
         >
-          Back to Homepage
+          Trang chủ
         </button>
       </div>
     </main>
