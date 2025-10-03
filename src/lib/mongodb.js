@@ -5,11 +5,11 @@ if (!MONGODB_URI) throw new Error("Please add MONGODB_URI to .env");
 
 let isConnected = false;
 
-export default async function connectDB() {
+async function connectDB() {
   if (isConnected) return mongoose;
 
   try {
-    const conn = await mongoose.connect(MONGODB_URI, { dbName: "test" });
+    const conn = await mongoose.connect(MONGODB_URI, { dbName: "cinema" });
     isConnected = true;
     console.log("✅ MongoDB connected");
     return conn;
@@ -18,3 +18,5 @@ export default async function connectDB() {
     throw err;
   }
 }
+
+export default connectDB;
