@@ -1,8 +1,4 @@
-import RegisterForm from "@/components/forms/RegisterForm";
-import React from "react";
-
-export default function page() {
-  return (
-    <RegisterForm />
-  );
+import { redirect } from "next/navigation";
+export default function Page() {
+  redirect("/auth");
 }

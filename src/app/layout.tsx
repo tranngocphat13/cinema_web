@@ -3,6 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 
 import ClientProvider from "@/components/forms/ClientProvider";
+import CinemaBackground from "@/components/forms/CInemaBG";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -26,18 +27,11 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased relative min-h-screen`}
-      >
-        {/* Background image */}
-        <div
-          className="absolute inset-0 bg-cover bg-center"
-          style={{
-            backgroundImage: "url('/images/background_ui.png')", // ảnh nằm trong /public
-          }}
-        />
+      <body className={`${geistSans.variable} ${geistMono.variable} antialiased min-h-screen`}>
+        {/* ✅ Background toàn app */}
+        <CinemaBackground />
 
-        {/* Nội dung app */}
+        {/* ✅ Nội dung app nằm trên background */}
         <div className="relative z-10">
           <ClientProvider>{children}</ClientProvider>
         </div>

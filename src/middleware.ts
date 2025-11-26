@@ -7,7 +7,7 @@ export async function middleware(req: NextRequest) {
   const { pathname } = url;
 
   // Các route public không cần đăng nhập
-  const publicPaths = ["/", "/login", "/register", "/about", "/contact", "/movies"];
+  const publicPaths = ["/", "/auth", "/about", "/contact", "/movies"];
 
   // Bỏ qua các route hệ thống
   if (
