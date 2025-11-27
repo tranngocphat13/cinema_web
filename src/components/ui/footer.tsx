@@ -57,21 +57,21 @@ export default function Footer() {
                 <span className="mt-0.5 inline-flex h-8 w-8 items-center justify-center rounded-xl bg-emerald-400/10 border border-emerald-300/15">
                   <MapPin size={16} className="text-emerald-200" />
                 </span>
-                {/* <p>335 Nguyễn Hữu Thọ, Quận 7, TP.HCM</p> */}
+                <p>335 Nguyễn Hữu Thọ, Quận 7, TP.HCM</p>
               </div>
 
               <div className="flex gap-3 items-start">
                 <span className="mt-0.5 inline-flex h-8 w-8 items-center justify-center rounded-xl bg-emerald-400/10 border border-emerald-300/15">
                   <Phone size={16} className="text-emerald-200" />
                 </span>
-                {/* <p>0339573513</p> */}
+                <p>0339573513</p> 
               </div>
 
               <div className="flex gap-3 items-start">
                 <span className="mt-0.5 inline-flex h-8 w-8 items-center justify-center rounded-xl bg-emerald-400/10 border border-emerald-300/15">
                   <Mail size={16} className="text-emerald-200" />
                 </span>
-                {/* <p>support@mycinema.vn</p> */}
+                <p>support@mycinema.vn</p>
               </div>
             </div>
 
