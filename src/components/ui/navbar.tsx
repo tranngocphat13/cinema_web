@@ -71,7 +71,7 @@ export default function Navbar() {
             <Link href="/" className="flex items-center gap-3 group">
               <div className="relative h-9 w-36 sm:w-40">
                 <Image
-                  src="/images/logo.png"
+                  src="/logo.png"
                   alt="Cinemas"
                   fill
                   sizes="160px"
