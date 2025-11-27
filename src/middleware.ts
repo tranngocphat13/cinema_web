@@ -1,63 +1,50 @@
-// middleware.ts
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { getToken } from "next-auth/jwt";
-
-type UserRole = "Admin" | "User" | string;
-
-type AppToken = {
-  role?: UserRole;
-  // next-auth token còn có nhiều field khác, mình không cần khai báo hết
-};
-
-const LOGIN_PATH = "/login";
-
-const PUBLIC_PATHS: readonly string[] = ["/", "/auth", "/login", "/about", "/contact", "/movies"];
-
-// Match file tĩnh trong public: /logo.png, /images/a.jpg, /fonts/x.woff2, ...
-const PUBLIC_FILE_REGEX = /\.(?:css|js|map|png|jpg|jpeg|gif|svg|ico|webp|avif|txt|xml|json|woff|woff2|ttf|eot)$/i;
 
 export async function middleware(req: NextRequest) {
   const url = req.nextUrl.clone();
   const { pathname } = url;
 
-  // ✅ Bỏ qua hệ thống + file tĩnh
+  // Các route public không cần đăng nhập
+  const publicPaths = ["/", "/auth", "/about", "/contact", "/movies"];
+
+  // Bỏ qua các route hệ thống
   if (
-    pathname.startsWith("/api") ||
     pathname.startsWith("/_next") ||
-    pathname.startsWith("/static") ||
-    pathname === "/favicon.ico" ||
-    PUBLIC_FILE_REGEX.test(pathname)
+    pathname.startsWith("/api") ||
+    pathname.startsWith("/static")
   ) {
     return NextResponse.next();
   }
 
-  // ✅ Route công khai
-  if (PUBLIC_PATHS.some((p) => pathname === p || pathname.startsWith(`${p}/`))) {
+  // Cho phép truy cập nếu route công khai
+  if (publicPaths.some((path) => pathname === path || pathname.startsWith(path + "/"))) {
     return NextResponse.next();
   }
 
-  const token = (await getToken({
-    req,
-    secret: process.env.NEXTAUTH_SECRET,
-  })) as AppToken | null;
+  // Lấy token từ cookie (next-auth)
+  const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET });
 
-  // ✅ Chưa đăng nhập -> về trang login (tránh loop vì LOGIN_PATH là public)
+  // Nếu chưa đăng nhập, redirect về /login
   if (!token) {
-    url.pathname = LOGIN_PATH;
+    url.pathname = "/login";
     url.searchParams.set("callbackUrl", req.url);
     return NextResponse.redirect(url);
   }
 
-  // ✅ Check role admin
-  if (pathname.startsWith("/admin") && token.role !== "Admin") {
+  // Kiểm tra role user
+  const userRole = token.role;
+
+  // Nếu truy cập admin mà không phải Admin => redirect về trang chủ
+  if (pathname.startsWith("/admin") && userRole !== "Admin") {
     return NextResponse.redirect(new URL("/", req.url));
   }
 
+  // Cho phép các trường hợp còn lại
   return NextResponse.next();
 }
 
 export const config = {
-  // Không áp dụng middleware cho API/auth + next static/image
-  matcher: ["/((?!api|_next/static|_next/image|favicon.ico).*)"],
+  matcher: ["/((?!_next|api|static|favicon.ico).*)"],
 };
