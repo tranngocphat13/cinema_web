@@ -6,11 +6,11 @@ import connectDB from "@/lib/mongodb";
 import Booking from "@/models/booking";
 import Hold from "@/models/holdseat";
 import { verifyVnpReturn } from "@/lib/vnpay";
-
 export async function GET(req) {
   try {
     const { searchParams } = new URL(req.url);
     const paramsObj = Object.fromEntries(searchParams.entries());
+    
 
     const { isValid, params: sorted } = verifyVnpReturn(paramsObj);
     if (!isValid) {
