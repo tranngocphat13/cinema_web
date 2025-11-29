@@ -3,27 +3,47 @@ import Hold from "@/models/holdseat";
 import Booking from "@/models/booking";
 
 /**
- * Trả về Set<string> các seatId đang bị khóa:
- *  - Hold còn hạn (status:"hold", expireAt > now)
- *  - Booking ở trạng thái "pending" hoặc "paid"
+ * Trả về Set seatId đang bị khoá:
+ * - Đang hold và CHƯA hết hạn
+ * - Hoặc đã được thanh toán (paid)
+ *
+ * NOTE:
+ * - TTL Mongo có thể xoá chậm ~60s, nên function này chủ động ignore hold hết hạn
+ * - và dọn luôn hold hết hạn để DB gọn.
  */
 export async function getLockedSeatIds(showtimeId) {
   const now = new Date();
+  const locked = new Set();
 
-  const holds = await Hold.find({
+  // ✅ Dọn các hold đã hết hạn (TTL có thể chưa xoá kịp)
+  await Hold.deleteMany({
     showtime: showtimeId,
     status: "hold",
-    expireAt: { $gt: now },
-  }).select("seat");
+    expireAt: { $lte: now },
+  });
 
-  const bookings = await Booking.find({
-    showtime: showtimeId,
-    status: { $in: ["pending", "paid"] },
-  }).select("seats");
+  // ✅ 1) Ghế đang hold và còn hạn
+  const holds = await Hold.find(
+    {
+      showtime: showtimeId,
+      status: "hold",
+      expireAt: { $gt: now },
+    },
+    { seat: 1 }
+  ).lean();
 
-  const locked = new Set();
   for (const h of holds) locked.add(String(h.seat));
-  for (const b of bookings) for (const sid of b.seats) locked.add(String(sid));
+
+  // ✅ 2) Ghế đã thanh toán (paid) => khoá cứng
+  const paidBookings = await Booking.find(
+    { showtime: showtimeId, status: "paid" },
+    { seats: 1 }
+  ).lean();
+
+  for (const b of paidBookings) {
+    const seats = Array.isArray(b.seats) ? b.seats : [];
+    for (const sid of seats) locked.add(String(sid));
+  }
 
   return locked;
 }
