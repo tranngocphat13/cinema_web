@@ -4,31 +4,37 @@ import qs from "qs";
 
 function sortObject(obj) {
   const sorted = {};
-  const keys = Object.keys(obj).map(k => encodeURIComponent(k)).sort();
-  keys.forEach(k => {
+  const keys = Object.keys(obj).map((k) => encodeURIComponent(k)).sort();
+  keys.forEach((k) => {
     sorted[k] = encodeURIComponent(obj[k]).replace(/%20/g, "+");
   });
   return sorted;
 }
 
 export function buildVnpayUrl({
-  amount, orderId, orderInfo, ipAddr, bankCode, locale = "vn",
+  amount,
+  orderId,
+  orderInfo,
+  ipAddr,
+  bankCode,
+  locale = "vn",
 }) {
-  const tmnCode   = process.env.VNP_TMN_CODE;
+  const tmnCode = process.env.VNP_TMN_CODE;
   const secretKey = String(process.env.VNP_HASH_SECRET || "").trim();
-  const vnpUrl    = process.env.VNP_PAYMENT_URL;
+  const vnpUrl = process.env.VNP_PAYMENT_URL;
   const returnUrl = process.env.VNP_RETURN_URL;
+  const ipnUrl = process.env.VNP_IPN_URL; // ✅ thêm
 
   if (!tmnCode || !secretKey || !vnpUrl || !returnUrl) {
     throw new Error("Thiếu cấu hình VNPAY");
   }
 
   const now = new Date();
-  const pad = n => String(n).padStart(2, "0");
-  const yyyymmddHHMMss = d =>
-    `${d.getFullYear()}${pad(d.getMonth() + 1)}${pad(d.getDate())}${pad(d.getHours())}${pad(
-      d.getMinutes()
-    )}${pad(d.getSeconds())}`;
+  const pad = (n) => String(n).padStart(2, "0");
+  const yyyymmddHHMMss = (d) =>
+    `${d.getFullYear()}${pad(d.getMonth() + 1)}${pad(d.getDate())}${pad(
+      d.getHours()
+    )}${pad(d.getMinutes())}${pad(d.getSeconds())}`;
 
   const createDate = yyyymmddHHMMss(now);
   const expireDate = yyyymmddHHMMss(new Date(now.getTime() + 15 * 60 * 1000));
@@ -52,11 +58,12 @@ export function buildVnpayUrl({
     vnp_CreateDate: createDate,
     vnp_ExpireDate: expireDate,
     ...(bankCode ? { vnp_BankCode: bankCode } : {}),
+    ...(ipnUrl ? { vnp_IpnUrl: ipnUrl } : {}), // ✅ thêm nếu có env
   };
 
-  // ❗ Chỉ dùng vnpParams, không có vnp_Params
   const sorted = sortObject(vnpParams);
   const signData = qs.stringify(sorted, { encode: false });
+
   const vnp_SecureHash = crypto
     .createHmac("sha512", secretKey)
     .update(Buffer.from(signData, "utf-8"))
@@ -78,6 +85,7 @@ export function verifyVnpReturn(query) {
 
   const sorted = sortObject(copy);
   const signData = qs.stringify(sorted, { encode: false });
+
   const calcHash = crypto
     .createHmac("sha512", String(process.env.VNP_HASH_SECRET || "").trim())
     .update(signData, "utf-8")
@@ -91,5 +99,3 @@ export function verifyVnpReturn(query) {
     calc: calcHash,
   };
 }
-
-
