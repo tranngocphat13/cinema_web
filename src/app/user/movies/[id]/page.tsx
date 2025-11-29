@@ -50,9 +50,7 @@ function formatTimeVN(iso: string) {
 }
 
 function formatDateLabel(dateStr: string) {
-  // input: new Date().toDateString() -> "Mon Oct 23 2023"
   const parts = dateStr.split(" ");
-  // [Mon, Oct, 23, 2023]
   return { dow: parts[0], md: `${parts[1]} ${parts[2]}`, y: parts[3] };
 }
 
@@ -71,7 +69,6 @@ export default function MovieDetail() {
   const [selectedShowtimeId, setSelectedShowtimeId] = useState<string | null>(null);
   const [selectedSeats, setSelectedSeats] = useState<string[]>([]);
 
-  // Giá vé
   const ticketPrices: Record<"normal" | "vip" | "couple", number> = {
     normal: 80000,
     vip: 120000,
@@ -120,14 +117,15 @@ export default function MovieDetail() {
       .catch((e) => console.error("GET /api/cinemas error:", e));
   }, []);
 
-  // Load showtimes khi chọn cinema
+  // ✅ Load showtimes khi chọn cinema (SỬA Ở ĐÂY: luôn gửi key movieId)
   useEffect(() => {
     const run = async () => {
       if (!selectedCinemaId || !movie) return;
 
-      const queryParam = movie._id
-        ? `movieId=${encodeURIComponent(movie._id)}`
-        : `tmdbId=${encodeURIComponent(String(movie.tmdbId))}`;
+      // ✅ QUAN TRỌNG:
+      // Backend của bạn chỉ đọc searchParams.get("movieId")
+      // nên dù bạn dùng tmdbId thì vẫn phải truyền bằng key movieId.
+      const queryParam = `movieId=${encodeURIComponent(movie._id ?? String(movie.tmdbId))}`;
 
       const url = `/api/showtimes?${queryParam}&cinemaId=${encodeURIComponent(selectedCinemaId)}`;
       const res = await fetch(url);
@@ -144,7 +142,9 @@ export default function MovieDetail() {
       const arr = normalizeShowtimesPayload(payload);
       setShowtimes(arr);
 
-      const uniqueDates = Array.from(new Set(arr.map((st) => new Date(st.startTime).toDateString())));
+      const uniqueDates = Array.from(
+        new Set(arr.map((st) => new Date(st.startTime).toDateString()))
+      );
       setDates(uniqueDates);
     };
 
@@ -173,23 +173,6 @@ export default function MovieDetail() {
     }
   };
 
-  // Giữ ghế 5 phút
-  const handleHoldSeats = async () => {
-    if (!selectedShowtimeId || selectedSeats.length === 0) return;
-    const res = await fetch("/api/hold-seat", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ showtimeId: selectedShowtimeId, seatIds: selectedSeats }),
-    });
-    const data = await res.json();
-    if (data?.ok) {
-      alert("Đã giữ ghế 5 phút. Hãy thanh toán trong thời gian này.");
-    } else {
-      alert(data?.error || "Không thể giữ ghế");
-      fetchSeatsByShowtime(selectedShowtimeId);
-    }
-  };
-
   const onConfirm = () => {
     if (!movie || !selectedShowtimeId || !selectedDate || selectedSeats.length === 0) return;
 
@@ -211,8 +194,10 @@ export default function MovieDetail() {
   if (!movie) return <p className="text-center text-white mt-10">Đang tải...</p>;
 
   return (
-    <div className="min-h-screen px-4 py-8 sm:px-6 lg:px-8 text-white
-                    bg-[radial-gradient(1200px_600px_at_50%_10%,rgba(16,185,129,0.18),transparent_55%),linear-gradient(to_bottom,#020403,#020403,#000)]">
+    <div
+      className="min-h-screen px-4 py-8 sm:px-6 lg:px-8 text-white
+                    bg-[radial-gradient(1200px_600px_at_50%_10%,rgba(16,185,129,0.18),transparent_55%),linear-gradient(to_bottom,#020403,#020403,#000)]"
+    >
       <div className="mx-auto max-w-6xl">
         {/* Header */}
         <div className="flex flex-col gap-2 mb-6">
@@ -260,9 +245,7 @@ export default function MovieDetail() {
                   {c.name}
                 </button>
               ))}
-              {cinemas.length === 0 && (
-                <div className="text-white/60 text-sm">Chưa có danh sách rạp.</div>
-              )}
+              {cinemas.length === 0 && <div className="text-white/60 text-sm">Chưa có danh sách rạp.</div>}
             </div>
 
             {/* Step 2: Date */}
@@ -294,9 +277,7 @@ export default function MovieDetail() {
                         }}
                         className={cx(
                           "w-[96px] rounded-2xl border px-3 py-2 text-left transition",
-                          selectedDate === d
-                            ? "bg-white/10 border-emerald-400/50"
-                            : "border-white/12 hover:bg-white/10"
+                          selectedDate === d ? "bg-white/10 border-emerald-400/50" : "border-white/12 hover:bg-white/10"
                         )}
                       >
                         <div className="text-[11px] text-white/60">{label.md}</div>
@@ -376,8 +357,7 @@ export default function MovieDetail() {
                     <h3 className="text-lg font-semibold">Chọn ghế</h3>
                   </div>
                   <div className="text-sm text-white/70">
-                    Tổng:{" "}
-                    <span className="font-bold text-white">{totalPrice.toLocaleString("vi-VN")}đ</span>
+                    Tổng: <span className="font-bold text-white">{totalPrice.toLocaleString("vi-VN")}đ</span>
                   </div>
                 </div>
 
@@ -388,21 +368,6 @@ export default function MovieDetail() {
                   ticketPrices={ticketPrices}
                   maxSelected={8}
                 />
-
-                {/* {selectedSeats.length > 0 && (
-                  <div className="mt-4 flex flex-wrap justify-between gap-3 items-center rounded-xl bg-white/5 border border-white/10 p-4">
-                    <div className="text-sm text-white/80">
-                      Đã chọn:{" "}
-                      <span className="font-semibold text-white">{selectedSeatNumbers.join(", ")}</span>
-                    </div>
-                    <button
-                      onClick={handleHoldSeats}
-                      className="px-4 py-2 rounded-lg bg-sky-500 hover:bg-sky-600 transition font-semibold"
-                    >
-                      Giữ ghế 5 phút
-                    </button>
-                  </div>
-                )} */}
               </div>
             )}
           </div>
@@ -412,13 +377,7 @@ export default function MovieDetail() {
             <div className="rounded-2xl border border-white/10 bg-white/5 backdrop-blur p-5 sm:p-6 shadow-[0_20px_70px_rgba(0,0,0,0.45)]">
               <div className="relative w-full aspect-[2/3] rounded-xl overflow-hidden border border-white/10">
                 {movie.posterUrl ? (
-                  <Image
-                    src={movie.posterUrl}
-                    alt={movie.title}
-                    fill
-                    className="object-cover"
-                    priority
-                  />
+                  <Image src={movie.posterUrl} alt={movie.title} fill className="object-cover" priority />
                 ) : (
                   <div className="h-full w-full bg-white/10" />
                 )}
@@ -426,9 +385,7 @@ export default function MovieDetail() {
 
               <div className="mt-4">
                 <h2 className="text-xl font-bold">{movie.title}</h2>
-                <p className="text-white/60 text-sm mt-1">
-                  Xem lại lựa chọn trước khi xác nhận.
-                </p>
+                <p className="text-white/60 text-sm mt-1">Xem lại lựa chọn trước khi xác nhận.</p>
               </div>
 
               <div className="mt-5 space-y-3 text-sm">
@@ -441,9 +398,7 @@ export default function MovieDetail() {
               <div className="mt-5 rounded-xl bg-black/30 border border-white/10 p-4">
                 <div className="flex items-center justify-between">
                   <span className="text-white/70">Tổng tiền</span>
-                  <span className="text-lg font-extrabold text-white">
-                    {totalPrice.toLocaleString("vi-VN")}đ
-                  </span>
+                  <span className="text-lg font-extrabold text-white">{totalPrice.toLocaleString("vi-VN")}đ</span>
                 </div>
                 <div className="text-xs text-white/50 mt-1">
                   Giá: Normal {ticketPrices.normal.toLocaleString("vi-VN")}đ · VIP{" "}
@@ -461,9 +416,7 @@ export default function MovieDetail() {
                 Xác nhận & tiếp tục
               </button>
 
-              <p className="text-xs text-white/45 mt-3">
-                Tip: Chọn suất chiếu trước rồi chọn ghế để trải nghiệm nhanh nhất.
-              </p>
+              <p className="text-xs text-white/45 mt-3">Tip: Chọn suất chiếu trước rồi chọn ghế để trải nghiệm nhanh nhất.</p>
             </div>
           </aside>
         </div>

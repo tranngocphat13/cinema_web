@@ -2,59 +2,70 @@
 
 export default function CinemaBackground() {
   return (
-    <div className="fixed inset-0 -z-10 pointer-events-none overflow-hidden">
-      <div className="absolute inset-0 bg-[#050806]" />
-      <div className="absolute inset-0 cinema-projector-soft opacity-95" />
-      <div className="absolute inset-0 cinema-vignette-soft opacity-45" />
-      <div className="absolute inset-0 cinema-scan-soft opacity-[0.10]" />
-      <div className="absolute inset-0 cinema-grain-soft opacity-[0.10]" />
+    <div aria-hidden className="fixed inset-0 -z-10 pointer-events-none">
+      {/* base */}
+      <div className="absolute inset-0 bg-[#04140c]" />
+      <div className="absolute inset-0 bg-[radial-gradient(900px_520px_at_25%_25%,rgba(16,185,129,0.33),transparent_60%)]" />
+      <div className="absolute inset-0 bg-[radial-gradient(900px_520px_at_70%_15%,rgba(16,185,129,0.22),transparent_62%)]" />
+
+      {/* moving light */}
+      <div className="absolute inset-0 opacity-90 cinematic-move" />
+
+      {/* scanlines + grain */}
+      <div className="absolute inset-0 opacity-20 cinematic-scanlines" />
+      <div className="absolute inset-0 opacity-[0.12] cinematic-grain" />
 
       <style jsx>{`
-        .cinema-projector-soft {
-          background:
-            radial-gradient(950px 560px at 20% 25%, rgba(16,185,129,0.42), transparent 60%),
-            radial-gradient(1100px 680px at 85% 18%, rgba(16,185,129,0.22), transparent 62%),
-            radial-gradient(1200px 900px at 50% 110%, rgba(0,0,0,0.65), transparent 55%),
-            linear-gradient(120deg, rgba(0,0,0,0.30), rgba(16,185,129,0.08), rgba(0,0,0,0.30));
-          filter: saturate(115%) contrast(108%);
-          transform: scale(1.10);
-          animation: projDriftSoft 16s ease-in-out infinite alternate;
+        .cinematic-move {
+          background: radial-gradient(
+              900px 500px at 10% 15%,
+              rgba(16, 185, 129, 0.45),
+              transparent 60%
+            ),
+            radial-gradient(800px 520px at 90% 10%, rgba(16, 185, 129, 0.25), transparent 65%),
+            radial-gradient(900px 700px at 60% 90%, rgba(0, 0, 0, 0.7), transparent 60%);
+          filter: saturate(110%) contrast(105%);
+          animation: drift 10s ease-in-out infinite alternate;
         }
-        .cinema-vignette-soft {
-          background: radial-gradient(1200px 900px at 50% 30%, transparent 66%, rgba(0,0,0,0.55) 100%);
-          mix-blend-mode: multiply;
-        }
-        .cinema-scan-soft {
+        .cinematic-scanlines {
           background: repeating-linear-gradient(
             to bottom,
-            rgba(255,255,255,0.10) 0px,
-            rgba(255,255,255,0.10) 1px,
-            rgba(0,0,0,0) 4px,
-            rgba(0,0,0,0) 9px
+            rgba(255, 255, 255, 0.12) 0px,
+            rgba(255, 255, 255, 0.12) 1px,
+            rgba(0, 0, 0, 0) 3px,
+            rgba(0, 0, 0, 0) 6px
           );
           mix-blend-mode: overlay;
-          animation: scanMoveSoft 7s linear infinite;
-          background-size: 100% 18px;
         }
-        .cinema-grain-soft {
-          background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)' opacity='.35'/%3E%3C/svg%3E");
+        .cinematic-grain {
+          background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='120' height='120' filter='url(%23n)' opacity='.35'/%3E%3C/svg%3E");
           mix-blend-mode: soft-light;
-          animation: grainJitterSoft 2.6s steps(2) infinite;
+          animation: grain 2.2s steps(2) infinite;
         }
-        @keyframes projDriftSoft {
-          0% { transform: translate3d(-1.2%,-0.8%,0) scale(1.10); }
-          100% { transform: translate3d(1.2%,0.8%,0) scale(1.14); }
+        @keyframes drift {
+          0% {
+            transform: translate3d(-2%, -1%, 0) scale(1.02);
+          }
+          100% {
+            transform: translate3d(2%, 1%, 0) scale(1.06);
+          }
         }
-        @keyframes scanMoveSoft {
-          0% { transform: translateY(0); }
-          100% { transform: translateY(18px); }
-        }
-        @keyframes grainJitterSoft {
-          0% { transform: translate(0,0); }
-          25% { transform: translate(-1%,0.7%); }
-          50% { transform: translate(1%,-0.7%); }
-          75% { transform: translate(-0.7%,-1%); }
-          100% { transform: translate(0.7%,1%); }
+        @keyframes grain {
+          0% {
+            transform: translate(0, 0);
+          }
+          25% {
+            transform: translate(-2%, 1%);
+          }
+          50% {
+            transform: translate(2%, -1%);
+          }
+          75% {
+            transform: translate(-1%, -2%);
+          }
+          100% {
+            transform: translate(1%, 2%);
+          }
         }
       `}</style>
     </div>

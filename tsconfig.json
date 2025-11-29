@@ -22,6 +22,6 @@
       "@/*": ["./src/*"]
     }
   },
-  "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts", "middleware.js", "src/app/admin/user", "src/lib/mongodb.js", "src/components/ui/GlobalLoading.js", "src/lib/tmdb.js"],
+  "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts", "middleware.js", "src/app/admin/user", "src/lib/mongodb.js", "src/components/ui/GlobalLoading.js", "src/lib/tmdb.js", "src/lib/i18n/dictionaries.js", "src/lib/i18n/server.js"],
   "exclude": ["node_modules"]
 }

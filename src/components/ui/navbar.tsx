@@ -3,29 +3,47 @@
 import Link from "next/link";
 import Image from "next/image";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Menu, X, ChevronDown, Ticket, UserRound, Home } from "lucide-react";
+import {
+  Menu,
+  X,
+  ChevronDown,
+  Ticket,
+  UserRound,
+  Home,
+  type LucideIcon,
+} from "lucide-react";
 import { useSession, signOut } from "next-auth/react";
 import { usePathname } from "next/navigation";
+
+import LanguageToggle from "@/components/i18n/LanguageToggle";
+import { useI18n } from "@/components/i18n/i18nProvider";
 
 function cx(...s: Array<string | false | null | undefined>) {
   return s.filter(Boolean).join(" ");
 }
 
+type NavItem = {
+  href: string;
+  tKey: string;
+  icon: LucideIcon;
+};
+
 export default function Navbar() {
   const pathname = usePathname();
   const { data: session, status } = useSession();
+  const { t } = useI18n();
 
   const [mobileOpen, setMobileOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
 
   const userMenuRef = useRef<HTMLDivElement>(null);
 
-  const userName = session?.user?.name || "Người dùng";
-  const isAuthed = !!session;
+  const userName = session?.user?.name || "User";
+  const isAuthed = Boolean(session);
 
-  const navItems = useMemo(() => {
-    const base = [{ href: "/", label: "Trang chủ", icon: Home }];
-    if (isAuthed) base.push({ href: "/user/tickets", label: "Vé của tôi", icon: Ticket });
+  const navItems: NavItem[] = useMemo(() => {
+    const base: NavItem[] = [{ href: "/", tKey: "nav.home", icon: Home }];
+    if (isAuthed) base.push({ href: "/user/tickets", tKey: "nav.myTickets", icon: Ticket });
     return base;
   }, [isAuthed]);
 
@@ -40,7 +58,6 @@ export default function Navbar() {
   }, []);
 
   useEffect(() => {
-    // đổi route thì đóng menu mobile cho gọn
     setMobileOpen(false);
     setUserMenuOpen(false);
   }, [pathname]);
@@ -49,12 +66,12 @@ export default function Navbar() {
     cx(
       "inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm transition",
       "text-white/75 hover:text-white hover:bg-white/5",
-      (pathname === href || (href !== "/" && pathname.startsWith(href))) && "text-white bg-white/10 border border-white/10"
+      (pathname === href || (href !== "/" && pathname.startsWith(href))) &&
+        "text-white bg-white/10 border border-white/10"
     );
 
   return (
     <header className="sticky top-0 z-50">
-      {/* top glow line */}
       <div className="h-px w-full bg-gradient-to-r from-transparent via-emerald-400/40 to-transparent" />
 
       <nav
@@ -71,8 +88,8 @@ export default function Navbar() {
             <Link href="/" className="flex items-center gap-3 group">
               <div className="relative h-9 w-36 sm:w-40">
                 <Image
-                  src="/logo.png"
-                  alt="Cinemas"
+                  src="/images/logo.png"
+                  alt="MyCinema"
                   fill
                   sizes="160px"
                   className="object-contain"
@@ -89,16 +106,18 @@ export default function Navbar() {
                 return (
                   <Link key={it.href} href={it.href} className={linkClass(it.href)}>
                     <Icon size={16} className="opacity-80" />
-                    {it.label}
+                    {t(it.tKey)}
                   </Link>
                 );
               })}
             </div>
 
-            {/* RIGHT: Auth */}
+            {/* RIGHT: Desktop */}
             <div className="hidden md:flex items-center gap-3">
+              <LanguageToggle />
+
               {status === "loading" ? (
-                <div className="text-white/60 text-sm">Đang tải...</div>
+                <div className="text-white/60 text-sm">{t("common.loading")}</div>
               ) : isAuthed ? (
                 <div className="relative" ref={userMenuRef}>
                   <button
@@ -114,7 +133,10 @@ export default function Navbar() {
                       <UserRound size={16} className="text-emerald-200" />
                     </span>
                     <span className="max-w-[160px] truncate">{userName}</span>
-                    <ChevronDown size={16} className={cx("opacity-70 transition", userMenuOpen && "rotate-180")} />
+                    <ChevronDown
+                      size={16}
+                      className={cx("opacity-70 transition", userMenuOpen && "rotate-180")}
+                    />
                   </button>
 
                   {userMenuOpen && (
@@ -126,8 +148,10 @@ export default function Navbar() {
                       )}
                     >
                       <div className="px-4 py-3 border-b border-white/10">
-                        <p className="text-xs text-white/55">Đăng nhập bởi</p>
-                        <p className="text-sm font-semibold text-white truncate">{session?.user?.email || userName}</p>
+                        <p className="text-xs text-white/55">{t("nav.hello")}</p>
+                        <p className="text-sm font-semibold text-white truncate">
+                          {session?.user?.email || userName}
+                        </p>
                       </div>
 
                       <div className="py-2">
@@ -136,7 +160,7 @@ export default function Navbar() {
                           className="flex items-center gap-2 px-4 py-2.5 text-sm text-white/80 hover:text-white hover:bg-white/5"
                         >
                           <UserRound size={16} className="opacity-80" />
-                          Tài khoản
+                          {t("nav.account")}
                         </Link>
 
                         <Link
@@ -144,7 +168,7 @@ export default function Navbar() {
                           className="flex items-center gap-2 px-4 py-2.5 text-sm text-white/80 hover:text-white hover:bg-white/5"
                         >
                           <Ticket size={16} className="opacity-80" />
-                          Vé của tôi
+                          {t("nav.myTickets")}
                         </Link>
 
                         <button
@@ -152,7 +176,7 @@ export default function Navbar() {
                           className="w-full text-left flex items-center gap-2 px-4 py-2.5 text-sm text-red-200 hover:bg-red-500/10"
                         >
                           <span className="inline-block h-2 w-2 rounded-full bg-red-400" />
-                          Đăng xuất
+                          {t("nav.logout")}
                         </button>
                       </div>
                     </div>
@@ -168,8 +192,9 @@ export default function Navbar() {
                       "shadow-[0_14px_45px_rgba(16,185,129,0.25)]"
                     )}
                   >
-                    Đăng nhập
+                    {t("nav.login")}
                   </Link>
+
                   <Link
                     href="/auth"
                     className={cx(
@@ -178,7 +203,7 @@ export default function Navbar() {
                       "hover:bg-white/10 transition"
                     )}
                   >
-                    Đăng ký
+                    {t("nav.register")}
                   </Link>
                 </>
               )}
@@ -203,21 +228,31 @@ export default function Navbar() {
         {mobileOpen && (
           <div className="md:hidden border-t border-white/10 bg-black/50 backdrop-blur-xl">
             <div className="mx-auto max-w-7xl px-4 sm:px-6 py-4 space-y-3">
+              <div className="flex items-center justify-between">
+                <div className="text-white/60 text-sm">Language</div>
+                <LanguageToggle />
+              </div>
+
+              <div className="h-px bg-white/10" />
+
               <div className="grid gap-2">
                 {navItems.map((it) => {
                   const Icon = it.icon;
-                  const active = pathname === it.href || (it.href !== "/" && pathname.startsWith(it.href));
+                  const active =
+                    pathname === it.href || (it.href !== "/" && pathname.startsWith(it.href));
                   return (
                     <Link
                       key={it.href}
                       href={it.href}
                       className={cx(
                         "flex items-center gap-3 rounded-xl px-4 py-3 border transition",
-                        active ? "bg-white/10 border-white/15 text-white" : "bg-white/5 border-white/10 text-white/80 hover:bg-white/10"
+                        active
+                          ? "bg-white/10 border-white/15 text-white"
+                          : "bg-white/5 border-white/10 text-white/80 hover:bg-white/10"
                       )}
                     >
                       <Icon size={18} className="opacity-85" />
-                      <span className="font-medium">{it.label}</span>
+                      <span className="font-medium">{t(it.tKey)}</span>
                     </Link>
                   );
                 })}
@@ -226,11 +261,11 @@ export default function Navbar() {
               <div className="h-px bg-white/10" />
 
               {status === "loading" ? (
-                <div className="text-white/60 text-sm">Đang tải...</div>
+                <div className="text-white/60 text-sm">{t("common.loading")}</div>
               ) : isAuthed ? (
                 <div className="space-y-2">
                   <div className="rounded-xl border border-white/10 bg-white/5 px-4 py-3">
-                    <p className="text-xs text-white/55">Xin chào</p>
+                    <p className="text-xs text-white/55">{t("nav.hello")}</p>
                     <p className="text-white font-semibold truncate">{userName}</p>
                   </div>
 
@@ -238,14 +273,14 @@ export default function Navbar() {
                     href="/profile"
                     className="flex items-center justify-center rounded-xl px-4 py-3 border border-white/10 bg-white/5 text-white/85 hover:bg-white/10 transition"
                   >
-                    Tài khoản
+                    {t("nav.account")}
                   </Link>
 
                   <button
                     onClick={() => signOut({ callbackUrl: "/" })}
                     className="w-full flex items-center justify-center rounded-xl px-4 py-3 bg-red-500/90 hover:bg-red-500 text-white font-semibold transition"
                   >
-                    Đăng xuất
+                    {t("nav.logout")}
                   </button>
                 </div>
               ) : (
@@ -254,13 +289,13 @@ export default function Navbar() {
                     href="/auth"
                     className="rounded-xl px-4 py-3 bg-emerald-400 text-black text-center font-semibold hover:bg-emerald-300 transition"
                   >
-                    Đăng nhập
+                    {t("nav.login")}
                   </Link>
                   <Link
                     href="/auth"
                     className="rounded-xl px-4 py-3 border border-white/15 bg-white/5 text-white/85 text-center hover:bg-white/10 transition"
                   >
-                    Đăng ký
+                    {t("nav.register")}
                   </Link>
                 </div>
               )}
