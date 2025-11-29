@@ -11,6 +11,30 @@ function sortObject(obj) {
   return sorted;
 }
 
+// ✅ format YYYYMMDDHHmmss theo múi giờ VN (GMT+7)
+function vnpDateInVN(date) {
+  const parts = new Intl.DateTimeFormat("en-GB", {
+    timeZone: "Asia/Ho_Chi_Minh",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+    hourCycle: "h23",
+  }).formatToParts(date);
+
+  const get = (type) => parts.find((p) => p.type === type)?.value || "00";
+  // en-GB gives dd/mm/yyyy
+  const DD = get("day");
+  const MM = get("month");
+  const YYYY = get("year");
+  const HH = get("hour");
+  const mm = get("minute");
+  const ss = get("second");
+  return `${YYYY}${MM}${DD}${HH}${mm}${ss}`;
+}
+
 export function buildVnpayUrl({
   amount,
   orderId,
@@ -23,21 +47,15 @@ export function buildVnpayUrl({
   const secretKey = String(process.env.VNP_HASH_SECRET || "").trim();
   const vnpUrl = process.env.VNP_PAYMENT_URL;
   const returnUrl = process.env.VNP_RETURN_URL;
-  const ipnUrl = process.env.VNP_IPN_URL; // ✅ thêm
+  const ipnUrl = process.env.VNP_IPN_URL;
 
   if (!tmnCode || !secretKey || !vnpUrl || !returnUrl) {
     throw new Error("Thiếu cấu hình VNPAY");
   }
 
   const now = new Date();
-  const pad = (n) => String(n).padStart(2, "0");
-  const yyyymmddHHMMss = (d) =>
-    `${d.getFullYear()}${pad(d.getMonth() + 1)}${pad(d.getDate())}${pad(
-      d.getHours()
-    )}${pad(d.getMinutes())}${pad(d.getSeconds())}`;
-
-  const createDate = yyyymmddHHMMss(now);
-  const expireDate = yyyymmddHHMMss(new Date(now.getTime() + 15 * 60 * 1000));
+  const createDate = vnpDateInVN(now);
+  const expireDate = vnpDateInVN(new Date(now.getTime() + 15 * 60 * 1000)); // 15 phút
 
   const safeInfo = (orderInfo || `Thanh toan ${orderId}`)
     .replace(/[^\w\s:,.()-]/g, " ")
@@ -58,7 +76,7 @@ export function buildVnpayUrl({
     vnp_CreateDate: createDate,
     vnp_ExpireDate: expireDate,
     ...(bankCode ? { vnp_BankCode: bankCode } : {}),
-    ...(ipnUrl ? { vnp_IpnUrl: ipnUrl } : {}), // ✅ thêm nếu có env
+    ...(ipnUrl ? { vnp_IpnUrl: ipnUrl } : {}),
   };
 
   const sorted = sortObject(vnpParams);
