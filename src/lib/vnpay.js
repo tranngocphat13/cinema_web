@@ -11,51 +11,35 @@ function sortObject(obj) {
   return sorted;
 }
 
-// ✅ format YYYYMMDDHHmmss theo múi giờ VN (GMT+7)
-function vnpDateInVN(date) {
-  const parts = new Intl.DateTimeFormat("en-GB", {
-    timeZone: "Asia/Ho_Chi_Minh",
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-    hour: "2-digit",
-    minute: "2-digit",
-    second: "2-digit",
-    hourCycle: "h23",
-  }).formatToParts(date);
-
-  const get = (type) => parts.find((p) => p.type === type)?.value || "00";
-  // en-GB gives dd/mm/yyyy
-  const DD = get("day");
-  const MM = get("month");
-  const YYYY = get("year");
-  const HH = get("hour");
-  const mm = get("minute");
-  const ss = get("second");
-  return `${YYYY}${MM}${DD}${HH}${mm}${ss}`;
+// ✅ YYYYMMDDHHmmss theo giờ VN (GMT+7) — không phụ thuộc timezone của Vercel
+function vnpDateVN(date = new Date()) {
+  const pad = (n) => String(n).padStart(2, "0");
+  // cộng 7h rồi dùng getUTC* để “đóng băng” timezone
+  const vn = new Date(date.getTime() + 7 * 60 * 60 * 1000);
+  return (
+    `${vn.getUTCFullYear()}` +
+    `${pad(vn.getUTCMonth() + 1)}` +
+    `${pad(vn.getUTCDate())}` +
+    `${pad(vn.getUTCHours())}` +
+    `${pad(vn.getUTCMinutes())}` +
+    `${pad(vn.getUTCSeconds())}`
+  );
 }
 
-export function buildVnpayUrl({
-  amount,
-  orderId,
-  orderInfo,
-  ipAddr,
-  bankCode,
-  locale = "vn",
-}) {
+export function buildVnpayUrl({ amount, orderId, orderInfo, ipAddr, bankCode, locale = "vn" }) {
   const tmnCode = process.env.VNP_TMN_CODE;
   const secretKey = String(process.env.VNP_HASH_SECRET || "").trim();
   const vnpUrl = process.env.VNP_PAYMENT_URL;
   const returnUrl = process.env.VNP_RETURN_URL;
-  const ipnUrl = process.env.VNP_IPN_URL;
+  const ipnUrl = process.env.VNP_IPN_URL; // optional
 
   if (!tmnCode || !secretKey || !vnpUrl || !returnUrl) {
     throw new Error("Thiếu cấu hình VNPAY");
   }
 
   const now = new Date();
-  const createDate = vnpDateInVN(now);
-  const expireDate = vnpDateInVN(new Date(now.getTime() + 15 * 60 * 1000)); // 15 phút
+  const createDate = vnpDateVN(now);
+  const expireDate = vnpDateVN(new Date(now.getTime() + 15 * 60 * 1000)); // 15 phút
 
   const safeInfo = (orderInfo || `Thanh toan ${orderId}`)
     .replace(/[^\w\s:,.()-]/g, " ")
@@ -87,10 +71,7 @@ export function buildVnpayUrl({
     .update(Buffer.from(signData, "utf-8"))
     .digest("hex");
 
-  const redirectUrl = `${vnpUrl}?${qs.stringify(
-    { ...sorted, vnp_SecureHash },
-    { encode: false }
-  )}`;
+  const redirectUrl = `${vnpUrl}?${qs.stringify({ ...sorted, vnp_SecureHash }, { encode: false })}`;
 
   return { redirectUrl, signData, vnp_SecureHash, vnpParams: sorted };
 }

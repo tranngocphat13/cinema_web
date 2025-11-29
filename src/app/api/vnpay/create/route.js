@@ -51,3 +51,8 @@ export async function POST(req) {
     return NextResponse.json({ error: "Lỗi tạo URL VNPAY" }, { status: 500 });
   }
 }
+console.log("VNP TIME DEBUG", {
+  serverISO: new Date().toISOString(),
+  createDate: vnpParams.vnp_CreateDate,
+  expireDate: vnpParams.vnp_ExpireDate,
+});
