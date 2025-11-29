@@ -2,44 +2,68 @@
 import crypto from "crypto";
 import qs from "qs";
 
-function sortObject(obj) {
-  const sorted = {};
-  const keys = Object.keys(obj).map((k) => encodeURIComponent(k)).sort();
-  keys.forEach((k) => {
-    sorted[k] = encodeURIComponent(obj[k]).replace(/%20/g, "+");
-  });
-  return sorted;
+function pad(n) {
+  return String(n).padStart(2, "0");
 }
 
-// ✅ YYYYMMDDHHmmss theo giờ VN (GMT+7) — không phụ thuộc timezone của Vercel
-function vnpDateVN(date = new Date()) {
-  const pad = (n) => String(n).padStart(2, "0");
-  // cộng 7h rồi dùng getUTC* để “đóng băng” timezone
-  const vn = new Date(date.getTime() + 7 * 60 * 60 * 1000);
+/**
+ * VNPAY nhận thời gian theo GMT+7 (VN) dạng yyyymmddHHMMss, KHÔNG kèm timezone.
+ * Vercel chạy UTC => phải tự chuyển sang giờ VN.
+ */
+function vnTimestamp(ms = Date.now()) {
+  // VN = UTC+7, Vietnam không có DST
+  const d = new Date(ms + 7 * 60 * 60 * 1000);
+  // dùng UTC-getters để tránh phụ thuộc server timezone
   return (
-    `${vn.getUTCFullYear()}` +
-    `${pad(vn.getUTCMonth() + 1)}` +
-    `${pad(vn.getUTCDate())}` +
-    `${pad(vn.getUTCHours())}` +
-    `${pad(vn.getUTCMinutes())}` +
-    `${pad(vn.getUTCSeconds())}`
+    `${d.getUTCFullYear()}` +
+    `${pad(d.getUTCMonth() + 1)}` +
+    `${pad(d.getUTCDate())}` +
+    `${pad(d.getUTCHours())}` +
+    `${pad(d.getUTCMinutes())}` +
+    `${pad(d.getUTCSeconds())}`
   );
 }
 
-export function buildVnpayUrl({ amount, orderId, orderInfo, ipAddr, bankCode, locale = "vn" }) {
+function sortObject(obj) {
+  const sorted = {};
+  const keys = Object.keys(obj)
+    .map((k) => encodeURIComponent(k))
+    .sort();
+
+  for (const k of keys) {
+    const rawKey = decodeURIComponent(k);
+    const val = obj[rawKey];
+    // VNPAY sample: encodeURIComponent + spaces => '+'
+    sorted[k] = encodeURIComponent(String(val)).replace(/%20/g, "+");
+  }
+  return sorted;
+}
+
+export function buildVnpayUrl({
+  amount,
+  orderId,
+  orderInfo,
+  ipAddr,
+  bankCode,
+  locale = "vn",
+}) {
   const tmnCode = process.env.VNP_TMN_CODE;
   const secretKey = String(process.env.VNP_HASH_SECRET || "").trim();
   const vnpUrl = process.env.VNP_PAYMENT_URL;
   const returnUrl = process.env.VNP_RETURN_URL;
-  const ipnUrl = process.env.VNP_IPN_URL; // optional
 
   if (!tmnCode || !secretKey || !vnpUrl || !returnUrl) {
-    throw new Error("Thiếu cấu hình VNPAY");
+    throw new Error("Thiếu cấu hình VNPAY (TMN_CODE / HASH_SECRET / PAYMENT_URL / RETURN_URL)");
   }
 
-  const now = new Date();
-  const createDate = vnpDateVN(now);
-  const expireDate = vnpDateVN(new Date(now.getTime() + 15 * 60 * 1000)); // 15 phút
+  const numericAmount = Math.round(Number(amount));
+  if (!Number.isFinite(numericAmount) || numericAmount <= 0) {
+    throw new Error("Amount không hợp lệ");
+  }
+
+  // ✅ giờ VN
+  const createDate = vnTimestamp(Date.now());
+  const expireDate = vnTimestamp(Date.now() + 15 * 60 * 1000);
 
   const safeInfo = (orderInfo || `Thanh toan ${orderId}`)
     .replace(/[^\w\s:,.()-]/g, " ")
@@ -49,9 +73,9 @@ export function buildVnpayUrl({ amount, orderId, orderInfo, ipAddr, bankCode, lo
     vnp_Version: "2.1.0",
     vnp_Command: "pay",
     vnp_TmnCode: tmnCode,
-    vnp_Amount: Math.round(Number(amount)) * 100,
+    vnp_Amount: numericAmount * 100, // VNPAY x100
     vnp_CurrCode: "VND",
-    vnp_TxnRef: String(orderId),
+    vnp_TxnRef: String(orderId), // lưu ý <= 34 ký tự
     vnp_OrderInfo: safeInfo,
     vnp_OrderType: "other",
     vnp_Locale: locale,
@@ -60,10 +84,11 @@ export function buildVnpayUrl({ amount, orderId, orderInfo, ipAddr, bankCode, lo
     vnp_CreateDate: createDate,
     vnp_ExpireDate: expireDate,
     ...(bankCode ? { vnp_BankCode: bankCode } : {}),
-    ...(ipnUrl ? { vnp_IpnUrl: ipnUrl } : {}),
   };
 
   const sorted = sortObject(vnpParams);
+
+  // signData là chuỗi query (đã encode theo chuẩn VNPAY)
   const signData = qs.stringify(sorted, { encode: false });
 
   const vnp_SecureHash = crypto
@@ -71,14 +96,24 @@ export function buildVnpayUrl({ amount, orderId, orderInfo, ipAddr, bankCode, lo
     .update(Buffer.from(signData, "utf-8"))
     .digest("hex");
 
-  const redirectUrl = `${vnpUrl}?${qs.stringify({ ...sorted, vnp_SecureHash }, { encode: false })}`;
+  // ✅ thêm vnp_SecureHashType khi redirect (không hash nó)
+  const redirectUrl =
+    `${vnpUrl}?` +
+    qs.stringify(
+      {
+        ...sorted,
+        vnp_SecureHashType: "HmacSHA512",
+        vnp_SecureHash,
+      },
+      { encode: false }
+    );
 
   return { redirectUrl, signData, vnp_SecureHash, vnpParams: sorted };
 }
 
 export function verifyVnpReturn(query) {
   const copy = { ...query };
-  const receivedHash = (copy.vnp_SecureHash || "").toLowerCase();
+  const receivedHash = String(copy.vnp_SecureHash || "").toLowerCase();
   delete copy.vnp_SecureHash;
   delete copy.vnp_SecureHashType;
 
@@ -87,7 +122,7 @@ export function verifyVnpReturn(query) {
 
   const calcHash = crypto
     .createHmac("sha512", String(process.env.VNP_HASH_SECRET || "").trim())
-    .update(signData, "utf-8")
+    .update(Buffer.from(signData, "utf-8"))
     .digest("hex")
     .toLowerCase();
 
@@ -96,5 +131,6 @@ export function verifyVnpReturn(query) {
     params: sorted,
     received: receivedHash,
     calc: calcHash,
+    signBase: signData,
   };
 }
