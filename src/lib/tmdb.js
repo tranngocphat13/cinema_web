@@ -1,19 +1,56 @@
-const TMDB_API_KEY = process.env.TMDB_API_KEY;
-const BASE = "https://api.themoviedb.org/3";
+import axios from "axios";
+import https from "node:https";
+import dns from "node:dns";
 
-function qs(params) {
-  const u = new URLSearchParams({ api_key: TMDB_API_KEY, ...params });
-  return u.toString();
-}
+const resolver = new dns.Resolver();
+resolver.setServers(["8.8.8.8", "1.1.1.1", "8.8.4.4"]);
+
+const httpsAgent = new https.Agent({
+  keepAlive: true,
+  lookup: (hostname, options, callback) => {
+    if (typeof options === "function") {
+      callback = options;
+      options = {};
+    }
+    dns.lookup(hostname, options, (err, address, family) => {
+      if (!err && address) return callback(null, address, family);
+      resolver.resolve4(hostname, (resErr, addresses) => {
+        if (resErr || !addresses?.length) return callback(resErr || err);
+        if (options && options.all) {
+          callback(null, addresses.map((addr) => ({ address: addr, family: 4 })));
+        } else {
+          callback(null, addresses[0], 4);
+        }
+      });
+    });
+  },
+});
+
+const apiClient = axios.create({
+  baseURL: "https://api.themoviedb.org/3",
+  httpsAgent,
+  timeout: 15000,
+});
 
 async function fetchJson(path, params = {}) {
-  const url = `${BASE}${path}?${qs(params)}`;
-  const res = await fetch(url, { next: { revalidate: 0 } });
-  if (!res.ok) {
-    const t = await res.text();
-    throw new Error(`TMDB ${path} failed: ${res.status} ${t}`);
+  const apiKey = process.env.TMDB_API_KEY;
+  const token = process.env.TMDB_READ_TOKEN;
+
+  const headers = {};
+  const queryParams = { ...params };
+
+  if (token) {
+    headers.Authorization = `Bearer ${token}`;
+  } else if (apiKey) {
+    queryParams.api_key = apiKey;
   }
-  return res.json();
+
+  const response = await apiClient.get(path, {
+    params: queryParams,
+    headers,
+  });
+
+  return response.data;
 }
 
 export async function getGenreMap(language = "vi-VN") {

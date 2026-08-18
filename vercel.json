@@ -1,7 +1,7 @@
 {
   "crons": [
     {
-      "path": "/api/cron/sync-tmdb?status=now_playing&region=VN&language=vi-VN",
+      "path": "/api/cron/sync-movies/sync-tmdb?status=now_playing&region=VN&language=vi-VN",
       "schedule": "0 0 * * *"
     }
   ]

@@ -6,17 +6,28 @@ export async function middleware(req: NextRequest) {
   const url = req.nextUrl.clone();
   const { pathname } = url;
 
-  // Các route public không cần đăng nhập
-  const publicPaths = ["/", "/auth", "/about", "/contact", "/movies"];
-
-  // Bỏ qua các route hệ thống
+  // Bỏ qua các route hệ thống và static files
   if (
     pathname.startsWith("/_next") ||
     pathname.startsWith("/api") ||
-    pathname.startsWith("/static")
+    pathname.startsWith("/static") ||
+    pathname.includes(".")
   ) {
     return NextResponse.next();
   }
+
+  // Các route public không cần đăng nhập
+  const publicPaths = [
+    "/",
+    "/auth",
+    "/login",
+    "/register",
+    "/about",
+    "/contact",
+    "/movies",
+    "/user/movies",
+    "/user/vnpay",
+  ];
 
   // Cho phép truy cập nếu route công khai
   if (publicPaths.some((path) => pathname === path || pathname.startsWith(path + "/"))) {
@@ -26,9 +37,9 @@ export async function middleware(req: NextRequest) {
   // Lấy token từ cookie (next-auth)
   const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET });
 
-  // Nếu chưa đăng nhập, redirect về /login
+  // Nếu chưa đăng nhập, redirect về /auth (hoặc /login)
   if (!token) {
-    url.pathname = "/login";
+    url.pathname = "/auth";
     url.searchParams.set("callbackUrl", req.url);
     return NextResponse.redirect(url);
   }

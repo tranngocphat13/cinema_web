@@ -1,4 +1,7 @@
 import { NextResponse } from "next/server";
+import axios from "axios";
+import https from "node:https";
+import dns from "node:dns";
 import connectDB from "@/lib/mongodb";
 import Movie from "@/models/movies";
 
@@ -34,28 +37,55 @@ function buildBackdropUrl(path) {
   return path ? `${BACKDROP_BASE}${path}` : undefined;
 }
 
+const resolver = new dns.Resolver();
+resolver.setServers(["8.8.8.8", "1.1.1.1", "8.8.4.4"]);
+
+const httpsAgent = new https.Agent({
+  keepAlive: true,
+  lookup: (hostname, options, callback) => {
+    if (typeof options === "function") {
+      callback = options;
+      options = {};
+    }
+    dns.lookup(hostname, options, (err, address, family) => {
+      if (!err && address) return callback(null, address, family);
+      resolver.resolve4(hostname, (resErr, addresses) => {
+        if (resErr || !addresses?.length) return callback(resErr || err);
+        if (options && options.all) {
+          callback(null, addresses.map((addr) => ({ address: addr, family: 4 })));
+        } else {
+          callback(null, addresses[0], 4);
+        }
+      });
+    });
+  },
+});
+
+const apiClient = axios.create({
+  baseURL: "https://api.themoviedb.org/3",
+  httpsAgent,
+  timeout: 15000,
+});
+
 async function tmdbFetch(path, params = {}) {
   const token = process.env.TMDB_READ_TOKEN;
   const apiKey = process.env.TMDB_API_KEY;
 
-  const url = new URL(`${TMDB_BASE}${path}`);
-  Object.entries(params).forEach(([k, v]) => {
-    if (v !== undefined && v !== null && String(v).length) url.searchParams.set(k, String(v));
-  });
+  const headers = {};
+  const queryParams = { ...params };
 
-  // fallback v3 key
-  if (!token && apiKey) url.searchParams.set("api_key", apiKey);
-
-  const res = await fetch(url.toString(), {
-    headers: token ? { Authorization: `Bearer ${token}`, "Content-Type": "application/json;charset=utf-8" } : {},
-    cache: "no-store",
-  });
-
-  if (!res.ok) {
-    const txt = await res.text().catch(() => "");
-    throw new Error(`TMDB ${path} failed: ${res.status} ${txt}`.slice(0, 400));
+  if (token) {
+    headers.Authorization = `Bearer ${token}`;
+  } else if (apiKey) {
+    queryParams.api_key = apiKey;
   }
-  return res.json();
+
+  const res = await apiClient.get(path, {
+    params: queryParams,
+    headers,
+  });
+
+  return res.data;
 }
 
 async function mapLimit(items, limit, fn) {
