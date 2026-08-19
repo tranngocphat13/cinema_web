@@ -27,7 +27,9 @@ export default async function syncNowPlayingLite({
       update: {
         $set: {
           tmdbId: m.id,
-          title: m.title,
+          title: m.title || m.original_title,
+          titleEn: m.original_title || m.title,
+          originalTitle: m.original_title || m.title,
           overview: m.overview || "",
           posterUrl: m.poster_path
             ? `https://image.tmdb.org/t/p/w500${m.poster_path}`

@@ -5,6 +5,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { Calendar, Ticket as TicketIcon, Info } from "lucide-react";
 import { useI18n } from "@/components/i18n/i18nProvider";
+import { formatReleaseDate } from "@/lib/formatDate";
 
 interface Movie {
   _id?: string;
@@ -41,10 +42,6 @@ export default function NowPlayingPage() {
 
   const locale = lang === "en" ? "en-US" : "vi-VN";
   const topLabel = lang === "en" ? "MYCINEMA • NOW PLAYING" : "MYCINEMA • PHIM ĐANG CHIẾU";
-  const subtitle =
-    lang === "en"
-      ? "Pick a movie you love and book in seconds."
-      : "Chọn phim bạn thích và đặt vé nhanh chóng.";
 
   return (
     <div className="min-h-screen px-4 py-10 sm:px-6 lg:px-8 text-white">
@@ -52,11 +49,11 @@ export default function NowPlayingPage() {
         <div className="flex flex-col items-center text-center gap-2 mb-10">
           <p className="text-[11px] tracking-[0.26em] uppercase text-emerald-200/70">{topLabel}</p>
           <h1 className="text-3xl sm:text-4xl font-extrabold">{t("movies.nowShowingTitle")}</h1>
-          <p className="max-w-2xl text-white/60 text-sm sm:text-base">{subtitle}</p>
+          <p className="max-w-2xl text-white/60 text-sm sm:text-base">{t("movies.subtitle")}</p>
         </div>
 
         {error && (
-          <p className="text-center text-red-300">{lang === "en" ? "Failed to load data!" : "Lỗi tải dữ liệu!"}</p>
+          <p className="text-center text-red-300">{t("common.error")}</p>
         )}
         {isLoading && <p className="text-center text-white/70">{t("common.loading")}</p>}
 
@@ -75,15 +72,21 @@ export default function NowPlayingPage() {
                     "transition-transform duration-300 hover:-translate-y-1"
                   )}
                 >
-                  <div className="relative aspect-[2/3] w-full overflow-hidden">
-                    <Image
-                      src={movie.posterUrl}
-                      alt={movie.title}
-                      fill
-                      className="object-cover transition-transform duration-500 group-hover:scale-[1.06]"
-                      sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
-                      priority={false}
-                    />
+                  <div className="relative aspect-[2/3] w-full overflow-hidden bg-white/5">
+                    {movie.posterUrl ? (
+                      <Image
+                        src={movie.posterUrl}
+                        alt={movie.title || "Movie poster"}
+                        fill
+                        className="object-cover transition-transform duration-500 group-hover:scale-[1.06]"
+                        sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
+                        priority={false}
+                      />
+                    ) : (
+                      <div className="flex h-full w-full items-center justify-center bg-white/5 text-xs text-white/40">
+                        No Poster
+                      </div>
+                    )}
 
                     <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/20 to-black/0" />
 
@@ -99,7 +102,7 @@ export default function NowPlayingPage() {
                     <div className="absolute inset-x-0 bottom-0 p-4">
                       <h3 className="text-lg font-semibold leading-snug line-clamp-2">{movie.title}</h3>
                       <p className="mt-1 text-xs text-white/70">
-                        {movie.releaseDate ? new Date(movie.releaseDate).toLocaleDateString(locale) : ""}
+                        {formatReleaseDate(movie.releaseDate, lang)}
                       </p>
                     </div>
 

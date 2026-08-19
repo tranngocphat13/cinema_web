@@ -5,19 +5,36 @@ import syncNowPlayingDaily from "@/lib/sync/tmdbNowPlayingDaily";
 
 export const dynamic = "force-dynamic";
 
-export async function GET() {
+export async function GET(req) {
+  const url = new URL(req.url);
+  const lang = url.searchParams.get("lang") || "vi";
+
   // ✅ Auto sync 1 lần/ngày (giờ VN). Nếu hôm nay sync rồi -> skip rất nhanh.
   try {
     await syncNowPlayingDaily();
   } catch (e) {
     console.error("[now-playing] auto sync failed:", e?.message || e);
-    // vẫn cho user xem data cũ trong DB
   }
 
   await connectDB();
-  const movies = await Movie.find({ status: "now_playing" })
+  const rawMovies = await Movie.find({ status: "now_playing" })
     .sort({ releaseDate: -1, createdAt: -1 })
     .lean();
+
+  const movies = rawMovies.map((m) => {
+    const title =
+      lang === "en"
+        ? m.titleEn || m.originalTitle || m.title
+        : m.title || m.originalTitle;
+
+    return {
+      ...m,
+      title,
+      originalTitle: m.originalTitle || m.title,
+      titleEn: m.titleEn || m.originalTitle || m.title,
+      titleVi: m.title || m.originalTitle,
+    };
+  });
 
   return NextResponse.json(movies);
 }

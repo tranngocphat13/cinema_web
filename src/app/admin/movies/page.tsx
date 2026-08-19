@@ -104,13 +104,19 @@ export default function AdminMoviesPage() {
             key={movie._id}
             className="bg-gray-900 text-white rounded shadow hover:shadow-lg transition p-2 flex flex-col"
           >
-            <Image
-              src={movie.posterUrl}
-              alt={movie.title}
-              width={300}
-              height={450}
-              className="rounded object-cover"
-            />
+            {movie.posterUrl ? (
+              <Image
+                src={movie.posterUrl}
+                alt={movie.title || "Movie poster"}
+                width={300}
+                height={450}
+                className="rounded object-cover"
+              />
+            ) : (
+              <div className="w-full h-[300px] bg-gray-800 rounded flex items-center justify-center text-gray-500 text-xs">
+                No Image
+              </div>
+            )}
             <h2 className="font-semibold mt-2 line-clamp-2">{movie.title}</h2>
             <p className="text-xs text-gray-400">{new Date(movie.releaseDate).toLocaleDateString()}</p>
             <p className="text-xs text-gray-400 mb-2">{movie.genres.join(", ")}</p>

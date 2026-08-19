@@ -188,6 +188,9 @@ export async function GET(req) {
       const update = {
         tmdbId: m.id,
         title: m.title || m.original_title || "Untitled",
+        titleEn: m.original_title || m.title || "Untitled",
+        originalTitle: m.original_title || m.title || "Untitled",
+        overview: m.overview || "",
         releaseDate: releaseDateIso || null,
         posterUrl: buildPosterUrl(m.poster_path),
         backdropUrl: buildBackdropUrl(m.backdrop_path),

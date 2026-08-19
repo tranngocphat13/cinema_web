@@ -4,6 +4,12 @@ import { useEffect, useMemo, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Image from "next/image";
 import CinemaSeatPicker from "@/components/forms/CinemaSeat";
+import { useI18n } from "@/components/i18n/i18nProvider";
+import {
+  formatShowtimePickerDate,
+  formatShowtimeHour,
+  formatReleaseDate,
+} from "@/lib/formatDate";
 
 interface Cinema {
   _id: string;
@@ -28,7 +34,15 @@ interface Movie {
   _id?: string;
   tmdbId: number;
   title: string;
+  titleEn?: string;
+  titleVi?: string;
+  originalTitle?: string;
+  overview?: string;
   posterUrl?: string;
+  releaseDate?: string;
+  ratingLabel?: string;
+  runtime?: number;
+  genres?: string[];
 }
 
 function cx(...s: Array<string | false | null | undefined>) {
@@ -45,18 +59,10 @@ function normalizeShowtimesPayload(payload: unknown): Showtime[] {
   return [];
 }
 
-function formatTimeVN(iso: string) {
-  return new Date(iso).toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" });
-}
-
-function formatDateLabel(dateStr: string) {
-  const parts = dateStr.split(" ");
-  return { dow: parts[0], md: `${parts[1]} ${parts[2]}`, y: parts[3] };
-}
-
 export default function MovieDetail() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
+  const { t, lang } = useI18n();
 
   const [movie, setMovie] = useState<Movie | null>(null);
   const [cinemas, setCinemas] = useState<Cinema[]>([]);
@@ -73,6 +79,13 @@ export default function MovieDetail() {
     normal: 80000,
     vip: 120000,
     couple: 150000,
+  };
+
+  const formatMoney = (amount: number) => {
+    if (lang === "en") {
+      return `${amount.toLocaleString("en-US")} VND`;
+    }
+    return `${amount.toLocaleString("vi-VN")}đ`;
   };
 
   const selectedCinema = useMemo(
@@ -98,16 +111,16 @@ export default function MovieDetail() {
     }, 0);
   }, [selectedSeats, seats]);
 
-  // Load movie
+  // Load movie with lang parameter
   useEffect(() => {
-    fetch(`/api/movies/${id}`)
+    fetch(`/api/movies/${id}?lang=${lang}`)
       .then((res) => res.json())
       .then(setMovie)
       .catch((e) => {
         console.error("GET /api/movies/:id error:", e);
         setMovie(null);
       });
-  }, [id]);
+  }, [id, lang]);
 
   // Load cinemas
   useEffect(() => {
@@ -117,22 +130,16 @@ export default function MovieDetail() {
       .catch((e) => console.error("GET /api/cinemas error:", e));
   }, []);
 
-  // ✅ Load showtimes khi chọn cinema (SỬA Ở ĐÂY: luôn gửi key movieId)
+  // Load showtimes
   useEffect(() => {
     const run = async () => {
       if (!selectedCinemaId || !movie) return;
 
-      // ✅ QUAN TRỌNG:
-      // Backend của bạn chỉ đọc searchParams.get("movieId")
-      // nên dù bạn dùng tmdbId thì vẫn phải truyền bằng key movieId.
       const queryParam = `movieId=${encodeURIComponent(movie._id ?? String(movie.tmdbId))}`;
-
       const url = `/api/showtimes?${queryParam}&cinemaId=${encodeURIComponent(selectedCinemaId)}`;
       const res = await fetch(url);
 
       if (!res.ok) {
-        const txt = await res.text();
-        console.error("GET /api/showtimes failed:", res.status, txt);
         setShowtimes([]);
         setDates([]);
         return;
@@ -155,12 +162,11 @@ export default function MovieDetail() {
     });
   }, [selectedCinemaId, movie]);
 
-  // Tải ghế THEO SUẤT CHIẾU
+  // Load seats by showtime
   const fetchSeatsByShowtime = async (showtimeId: string) => {
     try {
       const res = await fetch(`/api/showtimes/${showtimeId}/seats`);
       if (!res.ok) {
-        console.error("GET /api/showtimes/:id/seats failed:", res.status);
         setSeats([]);
         return;
       }
@@ -176,7 +182,7 @@ export default function MovieDetail() {
   const onConfirm = () => {
     if (!movie || !selectedShowtimeId || !selectedDate || selectedSeats.length === 0) return;
 
-    const time = selectedShowtime ? formatTimeVN(selectedShowtime.startTime) : "";
+    const time = selectedShowtime ? formatShowtimeHour(selectedShowtime.startTime, lang) : "";
     const seatNumbers = selectedSeatNumbers.join(",");
     const firstSeat = seats.find((s) => s._id === selectedSeats[0]);
     const ticketType = firstSeat?.type || "normal";
@@ -191,7 +197,9 @@ export default function MovieDetail() {
     );
   };
 
-  if (!movie) return <p className="text-center text-white mt-10">Đang tải...</p>;
+  const displayMovieTitle = movie ? (lang === "en" ? (movie.titleEn || movie.originalTitle || movie.title) : movie.title) : "";
+
+  if (!movie) return <p className="text-center text-white mt-10">{t("common.loading")}</p>;
 
   return (
     <div
@@ -201,9 +209,11 @@ export default function MovieDetail() {
       <div className="mx-auto max-w-6xl">
         {/* Header */}
         <div className="flex flex-col gap-2 mb-6">
-          <h1 className="text-2xl sm:text-3xl font-bold">{movie.title}</h1>
+          <h1 className="text-2xl sm:text-3xl font-bold">{displayMovieTitle}</h1>
           <p className="text-white/60 text-sm">
-            Chọn rạp → ngày → suất chiếu → ghế. Sau đó xác nhận để qua trang thanh toán.
+            {lang === "en"
+              ? "Select cinema → date → showtime → seats. Then confirm to proceed to checkout."
+              : "Chọn rạp → ngày → suất chiếu → ghế. Sau đó xác nhận để qua trang thanh toán."}
           </p>
         </div>
 
@@ -214,11 +224,11 @@ export default function MovieDetail() {
             <div className="flex items-center justify-between mb-3">
               <div>
                 <p className="text-[11px] tracking-[0.24em] text-white/50 uppercase">Step 1</p>
-                <h3 className="text-lg font-semibold">Chọn rạp</h3>
+                <h3 className="text-lg font-semibold">{t("movies.selectCinema")}</h3>
               </div>
               {selectedCinema && (
                 <span className="text-xs text-emerald-200 bg-emerald-400/10 border border-emerald-400/20 px-3 py-1 rounded-full">
-                  Đã chọn: {selectedCinema.name}
+                  {lang === "en" ? `Selected: ${selectedCinema.name}` : `Đã chọn: ${selectedCinema.name}`}
                 </span>
               )}
             </div>
@@ -245,7 +255,11 @@ export default function MovieDetail() {
                   {c.name}
                 </button>
               ))}
-              {cinemas.length === 0 && <div className="text-white/60 text-sm">Chưa có danh sách rạp.</div>}
+              {cinemas.length === 0 && (
+                <div className="text-white/60 text-sm">
+                  {lang === "en" ? "No cinema locations available." : "Chưa có danh sách rạp."}
+                </div>
+              )}
             </div>
 
             {/* Step 2: Date */}
@@ -253,11 +267,11 @@ export default function MovieDetail() {
               <div className="flex items-center justify-between mb-3">
                 <div>
                   <p className="text-[11px] tracking-[0.24em] text-white/50 uppercase">Step 2</p>
-                  <h3 className="text-lg font-semibold">Chọn ngày</h3>
+                  <h3 className="text-lg font-semibold">{t("movies.selectDate")}</h3>
                 </div>
                 {selectedDate && (
                   <span className="text-xs text-white/70 bg-white/5 border border-white/10 px-3 py-1 rounded-full">
-                    {selectedDate}
+                    {formatShowtimePickerDate(selectedDate, lang).fullDate}
                   </span>
                 )}
               </div>
@@ -265,7 +279,7 @@ export default function MovieDetail() {
               {dates.length > 0 ? (
                 <div className="flex flex-wrap gap-2">
                   {dates.map((d) => {
-                    const label = formatDateLabel(d);
+                    const label = formatShowtimePickerDate(d, lang);
                     return (
                       <button
                         key={d}
@@ -276,20 +290,24 @@ export default function MovieDetail() {
                           setSelectedSeats([]);
                         }}
                         className={cx(
-                          "w-[96px] rounded-2xl border px-3 py-2 text-left transition",
-                          selectedDate === d ? "bg-white/10 border-emerald-400/50" : "border-white/12 hover:bg-white/10"
+                          "w-[102px] rounded-2xl border px-3 py-2.5 text-left transition",
+                          selectedDate === d
+                            ? "bg-emerald-400/15 border-emerald-400/60 shadow-[0_0_15px_rgba(16,185,129,0.2)]"
+                            : "border-white/12 hover:bg-white/10"
                         )}
                       >
                         <div className="text-[11px] text-white/60">{label.md}</div>
-                        <div className="text-lg font-bold">{label.dow}</div>
-                        <div className="text-[11px] text-white/45">{label.y}</div>
+                        <div className="text-base font-bold text-white leading-tight mt-0.5">{label.dow}</div>
+                        <div className="text-[10px] text-white/40">{label.y}</div>
                       </button>
                     );
                   })}
                 </div>
               ) : (
                 <div className="text-white/55 text-sm">
-                  {selectedCinemaId ? "Không có suất chiếu cho rạp này." : "Hãy chọn rạp trước."}
+                  {selectedCinemaId
+                    ? (lang === "en" ? "No showtimes for this cinema." : "Không có suất chiếu cho rạp này.")
+                    : (lang === "en" ? "Please select a cinema first." : "Hãy chọn rạp trước.")}
                 </div>
               )}
             </div>
@@ -299,11 +317,11 @@ export default function MovieDetail() {
               <div className="flex items-center justify-between mb-3">
                 <div>
                   <p className="text-[11px] tracking-[0.24em] text-white/50 uppercase">Step 3</p>
-                  <h3 className="text-lg font-semibold">Chọn suất chiếu</h3>
+                  <h3 className="text-lg font-semibold">{t("movies.selectShowtime")}</h3>
                 </div>
                 {selectedShowtime && (
                   <span className="text-xs text-white/70 bg-white/5 border border-white/10 px-3 py-1 rounded-full">
-                    {formatTimeVN(selectedShowtime.startTime)}
+                    {formatShowtimeHour(selectedShowtime.startTime, lang)}
                   </span>
                 )}
               </div>
@@ -330,21 +348,23 @@ export default function MovieDetail() {
                             fetchSeatsByShowtime(st._id);
                           }}
                           className={cx(
-                            "px-4 py-2 rounded-xl border transition text-sm",
+                            "px-4 py-2 rounded-xl border transition text-sm font-medium",
                             isOngoing || isPast
                               ? "bg-white/5 border-white/10 text-white/35 cursor-not-allowed"
                               : selectedShowtimeId === st._id
-                              ? "bg-emerald-400 text-black border-emerald-300"
+                              ? "bg-emerald-400 text-black border-emerald-300 font-semibold shadow-[0_4px_15px_rgba(16,185,129,0.3)]"
                               : "border-white/15 text-white/80 hover:bg-white/10"
                           )}
                         >
-                          {formatTimeVN(st.startTime)}
+                          {formatShowtimeHour(st.startTime, lang)}
                         </button>
                       );
                     })}
                 </div>
               ) : (
-                <div className="text-white/55 text-sm">Hãy chọn ngày trước.</div>
+                <div className="text-white/55 text-sm">
+                  {lang === "en" ? "Please select a date first." : "Hãy chọn ngày trước."}
+                </div>
               )}
             </div>
 
@@ -354,10 +374,11 @@ export default function MovieDetail() {
                 <div className="flex items-center justify-between mb-3">
                   <div>
                     <p className="text-[11px] tracking-[0.24em] text-white/50 uppercase">Step 4</p>
-                    <h3 className="text-lg font-semibold">Chọn ghế</h3>
+                    <h3 className="text-lg font-semibold">{t("movies.seats")}</h3>
                   </div>
                   <div className="text-sm text-white/70">
-                    Tổng: <span className="font-bold text-white">{totalPrice.toLocaleString("vi-VN")}đ</span>
+                    {t("common.total")}:{" "}
+                    <span className="font-bold text-emerald-300">{formatMoney(totalPrice)}</span>
                   </div>
                 </div>
 
@@ -375,35 +396,63 @@ export default function MovieDetail() {
           {/* RIGHT: Summary */}
           <aside className="space-y-6">
             <div className="rounded-2xl border border-white/10 bg-white/5 backdrop-blur p-5 sm:p-6 shadow-[0_20px_70px_rgba(0,0,0,0.45)]">
-              <div className="relative w-full aspect-[2/3] rounded-xl overflow-hidden border border-white/10">
+              <div className="relative w-full aspect-[2/3] rounded-xl overflow-hidden border border-white/10 bg-white/5">
                 {movie.posterUrl ? (
-                  <Image src={movie.posterUrl} alt={movie.title} fill className="object-cover" priority />
+                  <Image src={movie.posterUrl} alt={displayMovieTitle} fill className="object-cover" priority />
                 ) : (
-                  <div className="h-full w-full bg-white/10" />
+                  <div className="h-full w-full flex items-center justify-center text-white/40 text-xs">No Poster</div>
                 )}
               </div>
 
               <div className="mt-4">
-                <h2 className="text-xl font-bold">{movie.title}</h2>
-                <p className="text-white/60 text-sm mt-1">Xem lại lựa chọn trước khi xác nhận.</p>
+                <h2 className="text-xl font-bold">{displayMovieTitle}</h2>
+                {movie.releaseDate && (
+                  <p className="text-xs text-white/50 mt-1">
+                    {t("movies.releaseDate")}: {formatReleaseDate(movie.releaseDate, lang)}
+                  </p>
+                )}
               </div>
 
               <div className="mt-5 space-y-3 text-sm">
-                <Row label="Rạp" value={selectedCinema?.name || "Chưa chọn"} />
-                <Row label="Ngày" value={selectedDate || "Chưa chọn"} />
-                <Row label="Giờ" value={selectedShowtime ? formatTimeVN(selectedShowtime.startTime) : "Chưa chọn"} />
-                <Row label="Ghế" value={selectedSeatNumbers.length ? selectedSeatNumbers.join(", ") : "Chưa chọn"} />
+                <Row
+                  label={t("movies.theater")}
+                  value={selectedCinema?.name || (lang === "en" ? "Not selected" : "Chưa chọn")}
+                />
+                <Row
+                  label={t("movies.date")}
+                  value={
+                    selectedDate
+                      ? formatShowtimePickerDate(selectedDate, lang).fullDate
+                      : (lang === "en" ? "Not selected" : "Chưa chọn")
+                  }
+                />
+                <Row
+                  label={t("movies.time")}
+                  value={
+                    selectedShowtime
+                      ? formatShowtimeHour(selectedShowtime.startTime, lang)
+                      : (lang === "en" ? "Not selected" : "Chưa chọn")
+                  }
+                />
+                <Row
+                  label={t("movies.seats")}
+                  value={
+                    selectedSeatNumbers.length
+                      ? selectedSeatNumbers.join(", ")
+                      : (lang === "en" ? "Not selected" : "Chưa chọn")
+                  }
+                />
               </div>
 
               <div className="mt-5 rounded-xl bg-black/30 border border-white/10 p-4">
                 <div className="flex items-center justify-between">
-                  <span className="text-white/70">Tổng tiền</span>
-                  <span className="text-lg font-extrabold text-white">{totalPrice.toLocaleString("vi-VN")}đ</span>
+                  <span className="text-white/70">{t("common.total")}</span>
+                  <span className="text-lg font-extrabold text-emerald-300">{formatMoney(totalPrice)}</span>
                 </div>
                 <div className="text-xs text-white/50 mt-1">
-                  Giá: Normal {ticketPrices.normal.toLocaleString("vi-VN")}đ · VIP{" "}
-                  {ticketPrices.vip.toLocaleString("vi-VN")}đ · Couple{" "}
-                  {ticketPrices.couple.toLocaleString("vi-VN")}đ
+                  {lang === "en"
+                    ? `Price: Regular ${formatMoney(ticketPrices.normal)} · VIP ${formatMoney(ticketPrices.vip)} · Couple ${formatMoney(ticketPrices.couple)}`
+                    : `Giá: Thường ${formatMoney(ticketPrices.normal)} · VIP ${formatMoney(ticketPrices.vip)} · Đôi ${formatMoney(ticketPrices.couple)}`}
                 </div>
               </div>
 
@@ -411,12 +460,10 @@ export default function MovieDetail() {
                 onClick={onConfirm}
                 disabled={!selectedShowtimeId || selectedSeats.length === 0 || !selectedDate}
                 className="mt-5 w-full py-3 rounded-xl bg-emerald-400 text-black font-bold hover:bg-emerald-300 transition
-                           disabled:opacity-40 disabled:cursor-not-allowed"
+                           disabled:opacity-40 disabled:cursor-not-allowed shadow-[0_10px_25px_rgba(16,185,129,0.25)]"
               >
-                Xác nhận & tiếp tục
+                {t("common.confirm")} & {t("movies.book")}
               </button>
-
-              <p className="text-xs text-white/45 mt-3">Tip: Chọn suất chiếu trước rồi chọn ghế để trải nghiệm nhanh nhất.</p>
             </div>
           </aside>
         </div>

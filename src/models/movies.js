@@ -4,7 +4,10 @@ const MovieSchema = new mongoose.Schema(
   {
     tmdbId: { type: Number, unique: true, required: true, index: true },
     title: String,
+    titleEn: String,
+    originalTitle: String,
     overview: String,
+    overviewEn: String,
     genres: [String],
     posterUrl: String,
     backdropUrl: String,
