@@ -6,11 +6,12 @@ import connectDB from "@/lib/mongodb";
 import Booking from "@/models/booking";
 import Hold from "@/models/holdseat";
 import { verifyVnpReturn } from "@/lib/vnpay";
+import { sendTicketEmail } from "@/lib/sendTicketEmail";
+
 export async function GET(req) {
   try {
     const { searchParams } = new URL(req.url);
     const paramsObj = Object.fromEntries(searchParams.entries());
-    
 
     const { isValid, params: sorted } = verifyVnpReturn(paramsObj);
     if (!isValid) {
@@ -28,11 +29,22 @@ export async function GET(req) {
     const ok = sorted.vnp_ResponseCode === "00" && sorted.vnp_TransactionStatus === "00";
 
     if (ok) {
+      const wasPaid = booking.status === "paid";
       booking.status = "paid";
       booking.paymentMethod = "vnpay";
+      if (!booking.ticketCode) {
+        booking.ticketCode = `MPX-${String(booking._id).slice(-6).toUpperCase()}`;
+      }
       await booking.save();
 
       await Hold.deleteMany({ booking: booking._id });
+
+      // Tự động gửi Email Vé điện tử kèm mã QR nếu chưa gửi
+      if (!wasPaid) {
+        sendTicketEmail(booking._id).catch((mailErr) => {
+          console.error("Failed to send ticket email:", mailErr);
+        });
+      }
 
       return NextResponse.json({ message: "Thanh toán thành công", bookingId: booking._id });
     }

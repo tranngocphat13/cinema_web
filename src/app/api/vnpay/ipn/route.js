@@ -6,6 +6,7 @@ import { verifyVnpReturn } from "@/lib/vnpay";
 import connectDB from "@/lib/mongodb";
 import Booking from "@/models/booking";
 import Hold from "@/models/holdseat";
+import { sendTicketEmail } from "@/lib/sendTicketEmail";
 
 function getBookingIdFromTxnRef(txnRef) {
   // txnRef = `${bookingId}-${Date.now()}-${random}`
@@ -59,10 +60,18 @@ export async function GET(req) {
     if (ok) {
       booking.status = "paid";
       booking.paymentMethod = "vnpay";
+      if (!booking.ticketCode) {
+        booking.ticketCode = `MPX-${String(booking._id).slice(-6).toUpperCase()}`;
+      }
       await booking.save();
 
       // ✅ chốt ghế (xóa hold) khi IPN báo OK
       await Hold.deleteMany({ booking: booking._id });
+
+      // Tự động gửi Email Vé điện tử kèm mã QR
+      sendTicketEmail(booking._id).catch((mailErr) => {
+        console.error("Failed to send ticket email from IPN:", mailErr);
+      });
 
       return NextResponse.json({ RspCode: "00", Message: "success" }, { status: 200 });
     }
