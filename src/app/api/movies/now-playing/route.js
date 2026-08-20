@@ -9,12 +9,10 @@ export async function GET(req) {
   const url = new URL(req.url);
   const lang = url.searchParams.get("lang") || "vi";
 
-  // ✅ Auto sync 1 lần/ngày (giờ VN). Nếu hôm nay sync rồi -> skip rất nhanh.
-  try {
-    await syncNowPlayingDaily();
-  } catch (e) {
-    console.error("[now-playing] auto sync failed:", e?.message || e);
-  }
+  // ✅ Auto sync chạy nền không block response người dùng
+  syncNowPlayingDaily().catch((e) => {
+    console.error("[now-playing] auto sync error:", e?.message || e);
+  });
 
   await connectDB();
   const rawMovies = await Movie.find({ status: "now_playing" })

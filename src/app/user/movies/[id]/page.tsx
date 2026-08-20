@@ -81,7 +81,7 @@ const TICKET_PRICES: Record<"normal" | "vip" | "couple", number> = {
 
 function getHighResTMDBUrl(url?: string): string {
   if (!url) return "";
-  return url.replace(/\/t\/p\/(w\d+|w780|w500|w300|w1280)\//, "/t/p/original/");
+  return url.replace(/\/t\/p\/(w\d+|w780|w500|w300|original)\//, "/t/p/w1280/");
 }
 
 export default function MovieDetail() {

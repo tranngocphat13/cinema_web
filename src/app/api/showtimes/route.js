@@ -35,14 +35,15 @@ export async function GET(req) {
     if (cinemaId) filter.cinema = cinemaId;
     if (roomId) filter.room = roomId;
 
-    // 🧹 Xoá suất chiếu đã hết hạn trước khi trả về
-    await Showtime.deleteMany({ endTime: { $lt: new Date() } });
+    // 🧹 Xoá suất chiếu đã hết hạn trong background
+    Showtime.deleteMany({ endTime: { $lt: new Date() } }).catch(() => {});
 
-    // Lấy danh sách suất chiếu còn hạn
+    // Lấy danh sách suất chiếu còn hạn với .lean() tối ưu tốc độ
     const showtimes = await Showtime.find(filter)
       .populate("movie")
       .populate("cinema")
-      .populate("room");
+      .populate("room")
+      .lean();
 
     return new Response(JSON.stringify(showtimes), {
       status: 200,

@@ -12,4 +12,8 @@ const ShowtimeSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
+ShowtimeSchema.index({ movie: 1, cinema: 1 });
+ShowtimeSchema.index({ room: 1, startTime: 1, endTime: 1 });
+ShowtimeSchema.index({ endTime: 1 });
+
 export default mongoose.models.Showtime || mongoose.model("Showtime", ShowtimeSchema);

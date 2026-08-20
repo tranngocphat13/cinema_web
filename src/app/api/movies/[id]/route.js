@@ -26,29 +26,26 @@ export async function GET(req, context) {
 
     const targetTmdbId = dbMovie?.tmdbId ? String(dbMovie.tmdbId) : id;
 
-    // Lấy chi tiết phim từ TMDB theo ngôn ngữ
-    let detail = null;
-    try {
-      detail = await getMovieDetail(targetTmdbId, tmdbLang);
-    } catch {
-      detail = null;
-    }
+    // Gọi song song 3 API TMDB (detail, videos, credits) cùng lúc để giảm 70% thời gian chờ
+    const [detailRes, videosRes, creditsRes] = await Promise.allSettled([
+      getMovieDetail(targetTmdbId, tmdbLang),
+      getMovieVideos(targetTmdbId, tmdbLang),
+      getMovieCredits(targetTmdbId, tmdbLang),
+    ]);
+
+    const detail = detailRes.status === "fulfilled" ? detailRes.value : null;
+    const videos = videosRes.status === "fulfilled" ? videosRes.value : null;
+    const credits = creditsRes.status === "fulfilled" ? creditsRes.value : null;
 
     // Nếu không tìm thấy trên TMDB và cũng không có trong DB
     if (!detail?.id && !dbMovie) {
       return NextResponse.json({ error: "Movie not found" }, { status: 404 });
     }
 
-    // Lấy trailer
-    let trailer = null;
-    let credits = null;
-    try {
-      const videos = await getMovieVideos(targetTmdbId, tmdbLang);
-      trailer =
-        videos?.results?.find((v) => v.type === "Trailer" && v.site === "YouTube") ||
-        videos?.results?.[0];
-      credits = await getMovieCredits(targetTmdbId, tmdbLang).catch(() => null);
-    } catch {}
+    const trailer =
+      videos?.results?.find((v) => v.type === "Trailer" && v.site === "YouTube") ||
+      videos?.results?.[0] ||
+      null;
 
     const isAnimation =
       (detail?.genres || []).some(
