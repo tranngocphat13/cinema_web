@@ -73,6 +73,18 @@ export async function getNowPlayingPages({ region = "VN", language = "vi-VN", ma
   return pages.flat();
 }
 
+export async function getUpcomingPages({ region = "VN", language = "vi-VN", maxPages = 3 } = {}) {
+  const first = await fetchJson("/movie/upcoming", { region, language, page: 1 });
+  const total = Math.min(first.total_pages || 1, maxPages);
+  const pages = [first.results || []];
+
+  for (let p = 2; p <= total; p++) {
+    const data = await fetchJson("/movie/upcoming", { region, language, page: p });
+    pages.push(data.results || []);
+  }
+  return pages.flat();
+}
+
 export async function getMovieDetail(id, language = "vi-VN") {
   return fetchJson(`/movie/${id}`, { language });
 }

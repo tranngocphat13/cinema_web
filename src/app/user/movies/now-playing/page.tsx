@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import useSWR from "swr";
 import Link from "next/link";
 import Image from "next/image";
@@ -58,6 +58,7 @@ export default function NowPlayingPage() {
   const { t, lang } = useI18n();
   const [heroIndex, setHeroIndex] = useState(0);
   const [activeTrailer, setActiveTrailer] = useState<{ url: string; title: string } | null>(null);
+  const [selectedGenre, setSelectedGenre] = useState<string>("all");
 
   const apiUrl = `/api/movies/now-playing?status=now_playing&lang=${lang}`;
   const { data, error } = useSWR<Movie[]>(apiUrl, fetcher);
@@ -66,7 +67,22 @@ export default function NowPlayingPage() {
   const moviesWithBackdrops = (data || []).filter((m) => m.backdropUrl || m.posterUrl);
   const featuredMovies = moviesWithBackdrops.slice(0, 6);
   const heroMovie = featuredMovies[heroIndex] || (data && data.length > 0 ? data[0] : null);
-  const gridMovies = data || [];
+
+  // Extract unique genres
+  const allGenres = useMemo(() => {
+    const set = new Set<string>();
+    (data || []).forEach((m) => {
+      (m.genres || []).forEach((g) => set.add(g));
+    });
+    return Array.from(set);
+  }, [data]);
+
+  // Filter grid movies by selected genre
+  const filteredMovies = useMemo(() => {
+    if (!data) return [];
+    if (selectedGenre === "all") return data;
+    return data.filter((m) => (m.genres || []).includes(selectedGenre));
+  }, [data, selectedGenre]);
 
   // Auto rotate hero every 7 seconds
   useEffect(() => {
@@ -111,7 +127,7 @@ export default function NowPlayingPage() {
               />
             ) : null}
             {/* Subtle soft left gradient only behind the title text */}
-            <div className="absolute inset-0 bg-gradient-to-r from-[#121414]/90 via-[#121414]/40 to-transparent pointer-events-none" />
+            <div className="absolute inset-0 bg-gradient-to-r from-[#121414]/95 via-[#121414]/50 to-transparent pointer-events-none" />
             <div className="absolute inset-x-0 bottom-0 h-28 bg-gradient-to-t from-[#121414] via-[#121414]/40 to-transparent pointer-events-none" />
           </div>
 
@@ -137,16 +153,13 @@ export default function NowPlayingPage() {
 
           {/* Hero Content */}
           <div className="relative z-10 max-w-2xl flex flex-col gap-3">
-            <div className="flex flex-wrap gap-2 mb-1">
-              <span className="border border-[#2c2c2c] bg-[#121414]/80 backdrop-blur-sm text-white px-2.5 py-0.5 rounded text-xs uppercase tracking-wider font-semibold">
-                IMAX 3D
+            <div className="flex items-center gap-2 mb-1">
+              <span className="border border-[#ff2424]/40 bg-[#ff2424]/20 text-[#ff2424] px-2.5 py-0.5 rounded text-xs uppercase tracking-wider font-bold">
+                {lang === "en" ? "FEATURED" : "NỔI BẬT"}
               </span>
-              <span className="border border-[#2c2c2c] bg-[#121414]/80 backdrop-blur-sm text-[#ff2424] px-2.5 py-0.5 rounded text-xs uppercase tracking-wider font-semibold">
-                {lang === "en" ? "FROM 80,000 VND" : "TỪ 80.000đ"}
-              </span>
-              {heroMovie.releaseDate && (
-                <span className="border border-[#2c2c2c] bg-[#121414]/80 backdrop-blur-sm text-white/70 px-2.5 py-0.5 rounded text-xs uppercase tracking-wider">
-                  {yearFrom(heroMovie.releaseDate)}
+              {heroMovie.ratingLabel && (
+                <span className="border border-[#2c2c2c] bg-[#1a1a1a]/80 text-white px-2.5 py-0.5 rounded text-xs uppercase tracking-wider font-semibold">
+                  {heroMovie.ratingLabel}
                 </span>
               )}
             </div>
@@ -155,15 +168,15 @@ export default function NowPlayingPage() {
               {lang === "en" ? (heroMovie.titleEn || heroMovie.originalTitle || heroMovie.title) : heroMovie.title}
             </h1>
 
-            {/* Rating Stars */}
-            <div className="flex items-center gap-1 text-[#ff2424] my-1">
-              <Star size={18} fill="#ff2424" />
-              <Star size={18} fill="#ff2424" />
-              <Star size={18} fill="#ff2424" />
-              <Star size={18} fill="#ff2424" />
-              <Star size={18} className="opacity-40" />
-              <span className="text-xs text-white/70 ml-2 font-medium">4.5 / 5.0</span>
-            </div>
+            {heroMovie.genres && heroMovie.genres.length > 0 && (
+              <div className="flex flex-wrap gap-2 my-1">
+                {heroMovie.genres.slice(0, 3).map((g) => (
+                  <span key={g} className="text-xs text-white/70 bg-white/10 px-2.5 py-0.5 rounded border border-white/10">
+                    {g}
+                  </span>
+                ))}
+              </div>
+            )}
 
             {heroMovie.overview && (
               <p className="text-white/75 text-sm sm:text-base line-clamp-3 mb-2 max-w-xl leading-relaxed">
@@ -229,7 +242,7 @@ export default function NowPlayingPage() {
 
       {/* All Movies Section */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6">
-        <div className="flex items-center justify-between mb-8 pb-3 border-b border-[#2c2c2c]">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8 pb-3 border-b border-[#2c2c2c]">
           <div>
             <span className="text-xs uppercase tracking-widest text-[#ff2424] font-bold">
               {lang === "en" ? "NOW PLAYING" : "DANH SÁCH"}
@@ -238,14 +251,40 @@ export default function NowPlayingPage() {
               {t("movies.nowShowingTitle")}
             </h2>
           </div>
-          <span className="text-xs text-white/50 uppercase tracking-wider">
-            {gridMovies.length} {lang === "en" ? "Movies" : "Phim"}
-          </span>
+
+          {/* Genre Filters */}
+          {allGenres.length > 0 && (
+            <div className="flex items-center gap-2 overflow-x-auto pb-1 hide-scrollbar">
+              <button
+                onClick={() => setSelectedGenre("all")}
+                className={`px-3.5 py-1.5 rounded-full text-xs font-semibold uppercase tracking-wider transition-all shrink-0 ${
+                  selectedGenre === "all"
+                    ? "bg-[#ff2424] text-white shadow-[0_0_12px_rgba(255,36,36,0.4)] font-bold"
+                    : "bg-[#1a1a1a] text-white/70 hover:text-white border border-[#2c2c2c]"
+                }`}
+              >
+                {lang === "en" ? "All" : "Tất cả"}
+              </button>
+              {allGenres.map((g) => (
+                <button
+                  key={g}
+                  onClick={() => setSelectedGenre(g)}
+                  className={`px-3.5 py-1.5 rounded-full text-xs font-semibold transition-all shrink-0 ${
+                    selectedGenre === g
+                      ? "bg-[#ff2424] text-white shadow-[0_0_12px_rgba(255,36,36,0.4)] font-bold"
+                      : "bg-[#1a1a1a] text-white/70 hover:text-white border border-[#2c2c2c]"
+                  }`}
+                >
+                  {g}
+                </button>
+              ))}
+            </div>
+          )}
         </div>
 
-        {gridMovies.length > 0 && (
+        {filteredMovies.length > 0 && (
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-            {gridMovies.map((movie) => {
+            {filteredMovies.map((movie) => {
               const year = yearFrom(movie.releaseDate);
 
               return (

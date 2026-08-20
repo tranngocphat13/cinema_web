@@ -2,7 +2,8 @@
 
 import { useEffect, useState } from "react";
 import TicketCard from "@/components/forms/TicketCard";
-import { Ticket as TicketIcon } from "lucide-react";
+import Link from "next/link";
+import { Ticket as TicketIcon, ArrowLeft, Home } from "lucide-react";
 import { useI18n } from "@/components/i18n/i18nProvider";
 
 type Ticket = {
@@ -46,8 +47,27 @@ export default function MyTicketsPage() {
   }, []);
 
   return (
-    <div className="min-h-screen px-4 sm:px-6 lg:px-8 py-12 text-[#e2e2e2]">
+    <div className="min-h-screen px-4 sm:px-6 lg:px-8 py-8 text-[#e2e2e2]">
       <div className="mx-auto max-w-6xl">
+        {/* Top Back Navigation */}
+        <div className="flex items-center justify-between mb-4">
+          <Link
+            href="/"
+            className="inline-flex items-center gap-2 text-white/60 hover:text-[#ff2424] text-xs sm:text-sm font-semibold uppercase tracking-wider transition-colors group"
+          >
+            <ArrowLeft size={16} className="group-hover:-translate-x-1 transition-transform" />
+            <span>{lang === "en" ? "Back to Home" : "Quay lại trang chủ"}</span>
+          </Link>
+
+          <Link
+            href="/user/movies/now-playing"
+            className="inline-flex items-center gap-1.5 text-xs text-white/50 hover:text-white transition-colors"
+          >
+            <Home size={13} />
+            <span>{lang === "en" ? "Browse Movies" : "Xem phim đang chiếu"}</span>
+          </Link>
+        </div>
+
         <div className="mb-10 pb-4 border-b border-[#2c2c2c] flex items-center justify-between">
           <div>
             <span className="text-xs uppercase tracking-widest text-[#ff2424] font-bold">
