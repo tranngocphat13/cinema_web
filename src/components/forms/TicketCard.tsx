@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import jsPDF from "jspdf";
+import { Ticket as TicketIcon, Download } from "lucide-react";
 
 type Ticket = {
   _id: string;
@@ -44,68 +45,68 @@ export default function TicketCard({ ticket }: { ticket: Ticket }) {
   const handleDownload = () => {
     const doc = new jsPDF();
     doc.setFontSize(18);
-    doc.text("CINEMA TICKET", 20, 18);
+    doc.text("MULTIPLEX CINEMA TICKET", 20, 18);
     doc.setFontSize(12);
     doc.text(`ID: ${ticket._id}`, 20, 32);
     doc.text(`Date: ${dateText}`, 20, 44);
     doc.text(`Time: ${timeText}`, 20, 54);
     doc.text(`Movie: ${ticket.showtime?.movie?.title || "—"}`, 20, 64);
     doc.text(`Seats: ${seatText}`, 20, 74);
-    doc.save(`ticket-${ticket._id}.pdf`);
+    doc.save(`multiplex-ticket-${ticket._id}.pdf`);
   };
 
   return (
     <Link
       href={`/user/tickets/${ticket._id}`}
-      className="block focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400 rounded-2xl"
+      className="block focus:outline-none focus-visible:ring-2 focus-visible:ring-[#ff2424] rounded-xl group"
     >
       <div
-        className="relative w-full max-w-[340px] rounded-2xl border border-white/15 bg-white/5 p-6 backdrop-blur-md
-                   shadow-[0_0_0_1px_rgba(255,255,255,0.06)]
-                   hover:border-emerald-400/50 hover:bg-white/[0.07] transition"
+        className="relative w-full rounded-xl border border-[#2c2c2c] bg-[#1a1a1a] p-6 backdrop-blur-md
+                   shadow-xl group-hover:border-[#ff2424] group-hover:shadow-[0_0_25px_rgba(255,36,36,0.2)] transition-all duration-300"
       >
-        {/* glow */}
-        <div
-          className="pointer-events-none absolute inset-0 rounded-2xl opacity-60
-                     [background:radial-gradient(120%_80%_at_50%_0%,rgba(16,185,129,0.25),transparent_70%)]"
-        />
+        {/* Top Header */}
+        <div className="flex items-center justify-between pb-3 border-b border-[#2c2c2c] mb-4">
+          <div className="flex items-center gap-2">
+            <TicketIcon size={16} className="text-[#ff2424]" />
+            <span className="text-xs uppercase font-bold tracking-wider text-white">MULTIPLEX TICKET</span>
+          </div>
+          <span className="text-[11px] font-mono text-white/50">{ticket._id.slice(-6).toUpperCase()}</span>
+        </div>
 
-        <div className="relative">
-          <div className="text-gray-300 text-sm">Date</div>
-          <div className="text-white text-xl font-semibold mt-1">{dateText}</div>
-
-          <div className="text-gray-300 text-sm mt-6">Movie Title</div>
-          <div className="text-white text-base font-extrabold tracking-wide mt-1 line-clamp-2">
+        <div>
+          <div className="text-xs uppercase tracking-wider text-white/50">Movie Title</div>
+          <div className="text-white text-lg font-black tracking-tight mt-1 line-clamp-1 group-hover:text-[#ff2424] transition-colors">
             {title}
           </div>
 
-          <div className="mt-6 flex items-end justify-between gap-6">
+          <div className="mt-4 grid grid-cols-2 gap-4 text-xs">
             <div>
-              <div className="flex items-center gap-2 text-gray-300 text-sm">
-                <span>Ticket</span>
-                <span className="text-white/90">({seatList.length || 0})</span>
-              </div>
-              <div className="text-white font-semibold mt-1">{seatText}</div>
+              <span className="text-white/50 uppercase tracking-wider">Date:</span>
+              <p className="text-white font-bold mt-0.5">{dateText}</p>
             </div>
-
             <div className="text-right">
-              <div className="text-gray-300 text-sm">Hours</div>
-              <div className="text-white text-lg font-bold mt-1">{timeText}</div>
+              <span className="text-white/50 uppercase tracking-wider">Time:</span>
+              <p className="text-white font-bold mt-0.5 font-mono">{timeText}</p>
             </div>
           </div>
 
-          <button
-            onClick={(e) => {
-              // ✅ chặn Link điều hướng khi bấm Download
-              e.preventDefault();
-              e.stopPropagation();
-              handleDownload();
-            }}
-            className="mt-6 w-full rounded-xl bg-emerald-400 py-3 font-semibold text-black
-                       hover:bg-emerald-300 active:scale-[0.99] transition"
-          >
-            Download Ticket
-          </button>
+          <div className="mt-4 pt-3 border-t border-[#2c2c2c] flex items-center justify-between">
+            <div>
+              <span className="text-[11px] text-white/50 uppercase">Seats ({seatList.length}):</span>
+              <p className="text-sm font-black text-[#ff2424]">{seatText}</p>
+            </div>
+
+            <button
+              onClick={(e) => {
+                e.preventDefault();
+                handleDownload();
+              }}
+              className="inline-flex items-center gap-1.5 rounded px-3 py-1.5 bg-[#121414] hover:bg-[#ff2424] hover:text-white border border-[#2c2c2c] text-xs font-semibold transition-colors"
+            >
+              <Download size={13} />
+              <span>PDF</span>
+            </button>
+          </div>
         </div>
       </div>
     </Link>

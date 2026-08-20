@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { getMovieDetail, getMovieVideos } from "@/lib/tmdb";
+import { getMovieDetail, getMovieVideos, getMovieCredits } from "@/lib/tmdb";
 
 export const dynamic = "force-dynamic";
 
@@ -21,6 +21,29 @@ export async function GET(req, context) {
     const trailer = videos?.results?.find(
       (v) => v.type === "Trailer" && v.site === "YouTube"
     ) || videos?.results?.[0];
+
+    // Lấy diễn viên / diễn viên lồng tiếng
+    const credits = await getMovieCredits(id, tmdbLang).catch(() => null);
+    const isAnimation = (detail.genres || []).some(
+      (g) =>
+        g.id === 16 ||
+        g.name?.toLowerCase().includes("hoạt hình") ||
+        g.name?.toLowerCase().includes("animation")
+    );
+
+    const cast = (credits?.cast || []).slice(0, 16).map((c) => ({
+      id: c.id,
+      name: c.name || c.original_name,
+      character: c.character || "",
+      profileUrl: c.profile_path
+        ? `https://image.tmdb.org/t/p/w185${c.profile_path}`
+        : "",
+      isVoice:
+        isAnimation ||
+        (c.character &&
+          (c.character.toLowerCase().includes("voice") ||
+            c.character.toLowerCase().includes("lồng tiếng"))),
+    }));
 
     // Định dạng dữ liệu trả về
     const movie = {
@@ -48,6 +71,8 @@ export async function GET(req, context) {
         ? `${detail.vote_average.toFixed(1)}/10`
         : (lang === "en" ? "No rating" : "Chưa có đánh giá"),
       countries: detail.production_countries?.map((c) => c.iso_3166_1) || [],
+      isAnimation,
+      cast,
     };
 
     return NextResponse.json(movie);

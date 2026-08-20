@@ -1,37 +1,78 @@
 "use client";
 
+import { useEffect, useState } from "react";
+import Image from "next/image";
+
+function getHighResTMDBUrl(url?: string): string {
+  if (!url) return "";
+  return url.replace(/\/t\/p\/(w\d+|w780|w500|w300|w1280)\//, "/t/p/original/");
+}
+
 export default function CinemaBackground() {
+  const [backdrops, setBackdrops] = useState<string[]>([]);
+  const [currentIndex, setCurrentIndex] = useState(0);
+
+  useEffect(() => {
+    fetch("/api/movies/now-playing?status=now_playing")
+      .then((res) => res.json())
+      .then((data) => {
+        if (Array.isArray(data)) {
+          const list: string[] = data
+            .map((m: { backdropUrl?: string; posterUrl?: string }) => getHighResTMDBUrl(m.backdropUrl || m.posterUrl))
+            .filter((url): url is string => Boolean(url));
+          if (list.length > 0) setBackdrops(list);
+        }
+      })
+      .catch(() => {});
+  }, []);
+
+  useEffect(() => {
+    if (backdrops.length <= 1) return;
+    const interval = setInterval(() => {
+      setCurrentIndex((prev) => (prev + 1) % backdrops.length);
+    }, 9000);
+    return () => clearInterval(interval);
+  }, [backdrops]);
+
   return (
-    <div aria-hidden className="fixed inset-0 -z-10 pointer-events-none">
-      {/* base */}
-      <div className="absolute inset-0 bg-[#04140c]" />
-      <div className="absolute inset-0 bg-[radial-gradient(900px_520px_at_25%_25%,rgba(16,185,129,0.33),transparent_60%)]" />
-      <div className="absolute inset-0 bg-[radial-gradient(900px_520px_at_70%_15%,rgba(16,185,129,0.22),transparent_62%)]" />
+    <div aria-hidden className="fixed inset-0 -z-10 pointer-events-none overflow-hidden">
+      {/* Base dark background */}
+      <div className="absolute inset-0 bg-[#121414]" />
 
-      {/* moving light */}
-      <div className="absolute inset-0 opacity-90 cinematic-move" />
+      {/* Dynamic Movie Backdrop Layer */}
+      {backdrops.length > 0 && (
+        <div className="absolute inset-0 transition-opacity duration-1000 ease-in-out opacity-25">
+          <Image
+            key={backdrops[currentIndex]}
+            src={backdrops[currentIndex]}
+            alt="Cinema backdrop atmosphere"
+            fill
+            unoptimized
+            priority
+            sizes="100vw"
+            className="object-cover object-center scale-105 animate-fade-in blur-[14px]"
+          />
+          {/* Deep Cinema Vignette & Gradients */}
+          <div className="absolute inset-0 bg-gradient-to-t from-[#121414] via-[#121414]/70 to-[#121414]/85" />
+          <div className="absolute inset-0 bg-[#121414]/50" />
+        </div>
+      )}
 
-      {/* scanlines + grain */}
-      <div className="absolute inset-0 opacity-20 cinematic-scanlines" />
-      <div className="absolute inset-0 opacity-[0.12] cinematic-grain" />
+      {/* Subtle red & cinema atmospheric lighting */}
+      <div className="absolute inset-0 bg-[radial-gradient(1000px_600px_at_50%_-10%,rgba(255,36,36,0.14),transparent_70%)]" />
+      <div className="absolute inset-0 bg-[radial-gradient(800px_500px_at_90%_20%,rgba(255,84,72,0.08),transparent_60%)]" />
+      <div className="absolute inset-0 bg-[radial-gradient(800px_500px_at_10%_80%,rgba(255,36,36,0.06),transparent_60%)]" />
+
+      {/* Scanlines + subtle grain */}
+      <div className="absolute inset-0 opacity-10 cinematic-scanlines" />
+      <div className="absolute inset-0 opacity-[0.06] cinematic-grain" />
 
       <style jsx>{`
-        .cinematic-move {
-          background: radial-gradient(
-              900px 500px at 10% 15%,
-              rgba(16, 185, 129, 0.45),
-              transparent 60%
-            ),
-            radial-gradient(800px 520px at 90% 10%, rgba(16, 185, 129, 0.25), transparent 65%),
-            radial-gradient(900px 700px at 60% 90%, rgba(0, 0, 0, 0.7), transparent 60%);
-          filter: saturate(110%) contrast(105%);
-          animation: drift 10s ease-in-out infinite alternate;
-        }
         .cinematic-scanlines {
           background: repeating-linear-gradient(
             to bottom,
-            rgba(255, 255, 255, 0.12) 0px,
-            rgba(255, 255, 255, 0.12) 1px,
+            rgba(255, 255, 255, 0.08) 0px,
+            rgba(255, 255, 255, 0.08) 1px,
             rgba(0, 0, 0, 0) 3px,
             rgba(0, 0, 0, 0) 6px
           );
@@ -42,32 +83,23 @@ export default function CinemaBackground() {
           mix-blend-mode: soft-light;
           animation: grain 2.2s steps(2) infinite;
         }
-        @keyframes drift {
-          0% {
-            transform: translate3d(-2%, -1%, 0) scale(1.02);
-          }
-          100% {
-            transform: translate3d(2%, 1%, 0) scale(1.06);
-          }
-        }
         @keyframes grain {
-          0% {
-            transform: translate(0, 0);
-          }
-          25% {
-            transform: translate(-2%, 1%);
-          }
-          50% {
-            transform: translate(2%, -1%);
-          }
-          75% {
-            transform: translate(-1%, -2%);
-          }
-          100% {
-            transform: translate(1%, 2%);
-          }
+          0% { transform: translate(0, 0); }
+          25% { transform: translate(-2%, 1%); }
+          50% { transform: translate(2%, -1%); }
+          75% { transform: translate(-1%, -2%); }
+          100% { transform: translate(1%, 2%); }
+        }
+        @keyframes fadeIn {
+          from { opacity: 0.2; transform: scale(1.02); }
+          to { opacity: 1; transform: scale(1.05); }
+        }
+        .animate-fade-in {
+          animation: fadeIn 1.5s ease-out forwards;
         }
       `}</style>
     </div>
   );
 }
+
+

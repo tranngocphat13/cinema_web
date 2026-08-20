@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from "react";
 import TicketCard from "@/components/forms/TicketCard";
+import { Ticket as TicketIcon } from "lucide-react";
+import { useI18n } from "@/components/i18n/i18nProvider";
 
 type Ticket = {
   _id: string;
@@ -14,6 +16,7 @@ type Ticket = {
 };
 
 export default function MyTicketsPage() {
+  const { t, lang } = useI18n();
   const [tickets, setTickets] = useState<Ticket[]>([]);
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState("");
@@ -31,7 +34,7 @@ export default function MyTicketsPage() {
 
         if (!cancelled) setTickets(Array.isArray(data?.tickets) ? data.tickets : []);
       } catch (e) {
-        if (!cancelled) setErr(e instanceof Error ? e.message : "Lỗi không xác định");
+        if (!cancelled) setErr(e instanceof Error ? e.message : "Error loading tickets");
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -43,23 +46,42 @@ export default function MyTicketsPage() {
   }, []);
 
   return (
-    <div className="min-h-screen px-6 py-12 text-white
-                    bg-[radial-gradient(1200px_500px_at_50%_20%,rgba(16,185,129,0.20),transparent_60%),linear-gradient(to_bottom,#050a07,#030504,#000)]">
+    <div className="min-h-screen px-4 sm:px-6 lg:px-8 py-12 text-[#e2e2e2]">
       <div className="mx-auto max-w-6xl">
-        <div className="mb-10">
-          <h1 className="text-3xl font-bold">My Tickets</h1>
-          <p className="text-gray-300 mt-2">Your purchased movie tickets.</p>
+        <div className="mb-10 pb-4 border-b border-[#2c2c2c] flex items-center justify-between">
+          <div>
+            <span className="text-xs uppercase tracking-widest text-[#ff2424] font-bold">
+              {lang === "en" ? "MY ACCOUNT" : "TÀI KHOẢN"}
+            </span>
+            <h1 className="text-2xl sm:text-3xl font-extrabold text-white mt-0.5 flex items-center gap-2.5">
+              <TicketIcon className="text-[#ff2424]" size={28} />
+              {t("nav.myTickets")}
+            </h1>
+          </div>
+          <span className="text-xs text-white/50 uppercase tracking-wider">
+            {tickets.length} {lang === "en" ? "Tickets" : "Vé"}
+          </span>
         </div>
 
-        {loading && <div className="text-gray-300">Loading...</div>}
-        {err && <div className="text-red-400">{err}</div>}
+        {loading && (
+          <div className="flex items-center justify-center py-20">
+            <div className="w-8 h-8 border-4 border-[#ff2424] border-t-transparent rounded-full animate-spin" />
+          </div>
+        )}
+
+        {err && <div className="text-red-400 text-sm font-semibold mb-6">{err}</div>}
 
         {!loading && !err && tickets.length === 0 && (
-          <div className="text-gray-300">You don’t have any tickets yet.</div>
+          <div className="p-12 text-center rounded-xl border border-[#2c2c2c] bg-[#1a1a1a]">
+            <TicketIcon size={40} className="mx-auto text-white/20 mb-3" />
+            <p className="text-white/60 text-sm">
+              {lang === "en" ? "You don’t have any tickets yet." : "Bạn chưa có vé xem phim nào."}
+            </p>
+          </div>
         )}
 
         {!loading && !err && tickets.length > 0 && (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {tickets.map((t) => (
               <TicketCard key={t._id} ticket={t} />
             ))}
@@ -69,3 +91,4 @@ export default function MyTicketsPage() {
     </div>
   );
 }
+

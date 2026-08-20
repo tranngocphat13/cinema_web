@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import TicketDetailCard from "@/components/forms/TicketCardDetails";
+import { ArrowLeft } from "lucide-react";
 
 type Ticket = {
   _id: string;
@@ -40,7 +41,7 @@ export default function TicketDetailPage() {
 
         if (!cancelled) setTicket(data?.ticket || null);
       } catch (e) {
-        if (!cancelled) setErr(e instanceof Error ? e.message : "Lỗi không xác định");
+        if (!cancelled) setErr(e instanceof Error ? e.message : "Error loading ticket");
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -52,22 +53,26 @@ export default function TicketDetailPage() {
   }, [id]);
 
   return (
-    <div className="min-h-screen px-6 py-12 text-white
-                    bg-[radial-gradient(1200px_500px_at_50%_20%,rgba(16,185,129,0.20),transparent_60%),linear-gradient(to_bottom,#050a07,#030504,#000)]">
-      <div className="mx-auto max-w-6xl">
+    <div className="min-h-screen px-4 sm:px-6 lg:px-8 py-12 text-[#e2e2e2]">
+      <div className="mx-auto max-w-4xl">
         <button
           onClick={() => router.push("/user/tickets")}
-          className="mb-10 inline-flex items-center gap-2 rounded-xl border border-white/15 bg-white/5 px-4 py-2
-                     hover:bg-white/10 transition"
+          className="mb-8 inline-flex items-center gap-2 rounded px-4 py-2 border border-[#2c2c2c] bg-[#1a1a1a] text-xs uppercase font-bold tracking-wider hover:border-[#ff2424] hover:text-[#ff2424] transition-colors"
         >
-          ← Back
+          <ArrowLeft size={16} />
+          <span>Back to My Tickets</span>
         </button>
 
-        {loading && <div className="text-gray-300">Loading...</div>}
-        {err && <div className="text-red-400">{err}</div>}
+        {loading && (
+          <div className="flex items-center justify-center py-20">
+            <div className="w-8 h-8 border-4 border-[#ff2424] border-t-transparent rounded-full animate-spin" />
+          </div>
+        )}
+
+        {err && <div className="text-red-400 text-sm font-semibold mb-6 text-center">{err}</div>}
 
         {!loading && !err && !ticket && (
-          <div className="text-gray-300">Ticket not found.</div>
+          <div className="text-white/50 text-center py-16">Ticket not found.</div>
         )}
 
         {!loading && !err && ticket && (
@@ -79,3 +84,4 @@ export default function TicketDetailPage() {
     </div>
   );
 }
+

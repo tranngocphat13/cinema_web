@@ -16,7 +16,6 @@ function cx(...s: Array<string | false | null | undefined>) {
 }
 
 function parseSeatNumber(seatNumber: string) {
-  // hỗ trợ A1, A01, AA10...
   const rowMatch = seatNumber.match(/^[A-Za-z]+/);
   const numMatch = seatNumber.match(/\d+/);
   const row = rowMatch?.[0]?.toUpperCase() ?? "?";
@@ -26,33 +25,39 @@ function parseSeatNumber(seatNumber: string) {
 
 function Screen() {
   return (
-    <div className="relative mb-5">
-      <div className="mx-auto w-[min(560px,92%)] h-10 rounded-b-[999px] rounded-t-2xl bg-white/10 border border-white/15" />
-      <div className="mx-auto -mt-7 w-[min(560px,92%)] text-center text-xs tracking-[0.28em] text-white/60">
-        SCREEN
-      </div>
-      <div className="pointer-events-none absolute inset-x-0 -top-6 h-24 bg-[radial-gradient(closest-side,rgba(16,185,129,0.22),transparent)] opacity-70" />
+    <div className="w-full max-w-xl mx-auto mb-10 flex flex-col items-center">
+      <svg className="w-full h-auto drop-shadow-[0_10px_20px_rgba(255,255,255,0.08)]" viewBox="0 0 400 40">
+        <path d="M 0 40 Q 200 0 400 40" fill="none" stroke="#e2e2e2" strokeWidth="2.5" className="opacity-80" />
+        <path d="M 0 40 Q 200 0 400 40" fill="none" stroke="#ffffff" strokeWidth="4" filter="blur(4px)" className="opacity-40" />
+      </svg>
+      <span className="text-xs font-bold uppercase tracking-[0.3em] text-[#e2e2e2]/60 mt-3">SCREEN</span>
     </div>
   );
 }
 
 function Legend() {
   return (
-    <div className="flex flex-wrap gap-3 text-sm text-white/85">
-      <LegendItem className="bg-white text-black" label="Normal" />
-      <LegendItem className="bg-yellow-400 text-black" label="VIP" />
-      <LegendItem className="bg-pink-500 text-white" label="Couple" />
-      <LegendItem className="bg-emerald-500 text-white" label="Selected" />
-      <LegendItem className="bg-gray-600 text-white" label="Unavailable" />
-    </div>
-  );
-}
-
-function LegendItem({ className, label }: { className: string; label: string }) {
-  return (
-    <div className="flex items-center gap-2">
-      <div className={cx("h-4 w-4 rounded-md", className)} />
-      <span className="text-white/80">{label}</span>
+    <div className="flex flex-wrap gap-4 text-xs font-semibold uppercase tracking-wider text-[#e2e2e2]/75">
+      <div className="flex items-center gap-2">
+        <div className="w-4 h-4 rounded bg-[#1e2020] border border-[#2c2c2c]" />
+        <span>Normal</span>
+      </div>
+      <div className="flex items-center gap-2">
+        <div className="w-4 h-4 rounded bg-[#241e12] border border-[#eab308]" />
+        <span>VIP</span>
+      </div>
+      <div className="flex items-center gap-2">
+        <div className="w-4 h-4 rounded bg-[#24131d] border border-[#ec4899]" />
+        <span>Couple</span>
+      </div>
+      <div className="flex items-center gap-2">
+        <div className="w-4 h-4 rounded bg-[#ff2424] shadow-[0_0_8px_rgba(255,36,36,0.6)]" />
+        <span className="text-white">Selected</span>
+      </div>
+      <div className="flex items-center gap-2">
+        <div className="w-4 h-4 rounded bg-[#1a1c1c] border border-[#2c2c2c] opacity-25" />
+        <span className="opacity-40">Occupied</span>
+      </div>
     </div>
   );
 }
@@ -85,13 +90,6 @@ export default function CinemaSeatPicker({
     return { rows, maxCol, byRow, mapped };
   }, [seats]);
 
-  const total = useMemo(() => {
-    return selectedSeatIds.reduce((sum, seatId) => {
-      const seat = seats.find((s) => s._id === seatId);
-      return seat ? sum + ticketPrices[seat.type] : sum;
-    }, 0);
-  }, [selectedSeatIds, seats, ticketPrices]);
-
   const toggle = (seatId: string) => {
     const seat = seats.find((s) => s._id === seatId);
     if (!seat) return;
@@ -102,10 +100,7 @@ export default function CinemaSeatPicker({
       return;
     }
 
-    // chỉ allow chọn ghế available
     if (!seat.isAvailable) return;
-
-    // limit chọn
     if (selectedSeatIds.length >= maxSelected) return;
 
     onChangeSelectedIds([...selectedSeatIds, seatId]);
@@ -113,47 +108,47 @@ export default function CinemaSeatPicker({
 
   const seatClass = (s: SeatApi) => {
     const selected = selectedSeatIds.includes(s._id);
-    if (selected) return "bg-emerald-500 text-white ring-2 ring-emerald-200/60";
-    if (!s.isAvailable) return "bg-gray-600 text-white/90 cursor-not-allowed";
-    if (s.type === "vip") return "bg-yellow-400 text-black hover:brightness-95";
-    if (s.type === "couple") return "bg-pink-500 text-white hover:brightness-110";
-    return "bg-white text-black hover:bg-gray-100";
+    if (selected)
+      return "bg-[#ff2424] text-white font-bold border-[#ff2424] shadow-[0_0_12px_rgba(255,36,36,0.6)] scale-105";
+    if (!s.isAvailable)
+      return "bg-[#1a1c1c] text-white/20 border-[#2c2c2c] opacity-25 cursor-not-allowed";
+    if (s.type === "vip")
+      return "bg-[#241e12] text-[#eab308] border-[#eab308]/60 hover:bg-[#eab308] hover:text-black";
+    if (s.type === "couple")
+      return "bg-[#24131d] text-[#ec4899] border-[#ec4899]/60 hover:bg-[#ec4899] hover:text-white";
+    return "bg-[#1e2020] text-white/90 border-[#2c2c2c] hover:bg-[#333535] hover:border-white/40";
   };
 
   return (
-    <div className="rounded-2xl border border-white/10 bg-white/5 p-4 md:p-6 backdrop-blur">
+    <div className="rounded-xl border border-[#2c2c2c] bg-[#121414]/90 p-4 sm:p-8 backdrop-blur shadow-2xl">
       <Screen />
 
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-4">
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-8 pb-4 border-b border-[#2c2c2c]">
         <Legend />
-        <div className="md:text-right">
-          <div className="text-xs text-white/60">Selected</div>
-          <div className="text-white font-semibold">
-            {selectedSeatIds.length} / {maxSelected}
-          </div>
-          <div className="text-xs text-white/60 mt-1">Total</div>
-          <div className="text-lg font-bold text-white">{total.toLocaleString("vi-VN")}đ</div>
+        <div className="text-xs text-white/60">
+          Selected: <span className="font-bold text-[#ff2424]">{selectedSeatIds.length}</span> / {maxSelected}
         </div>
       </div>
 
-      <div className="space-y-3">
+      {/* Seats Matrix */}
+      <div className="space-y-3 overflow-x-auto pb-4 hide-scrollbar">
         {normalized.rows.map((row) => {
           const rowSeats = normalized.byRow.get(row) || [];
           const byCol = new Map<number, SeatApi>();
           for (const s of rowSeats) byCol.set(parseSeatNumber(s.number).col, s);
 
           return (
-            <div key={row} className="flex items-center justify-center gap-3">
-              <span className="w-6 text-center font-bold text-gray-300">{row}</span>
+            <div key={row} className="flex items-center justify-center gap-2 sm:gap-3 min-w-max">
+              <span className="w-5 text-center font-bold text-xs text-white/50">{row}</span>
 
               <div
-                className="grid gap-2"
+                className="grid gap-1.5 sm:gap-2"
                 style={{ gridTemplateColumns: `repeat(${normalized.maxCol}, minmax(0, 1fr))` }}
               >
                 {Array.from({ length: normalized.maxCol }, (_, i) => {
                   const col = i + 1;
                   const seat = byCol.get(col);
-                  if (!seat) return <div key={`${row}-${col}`} className="w-12 h-12" />;
+                  if (!seat) return <div key={`${row}-${col}`} className="w-8 h-8 sm:w-10 sm:h-10" />;
 
                   const disabled = !seat.isAvailable && !selectedSeatIds.includes(seat._id);
                   return (
@@ -163,8 +158,8 @@ export default function CinemaSeatPicker({
                       disabled={disabled}
                       onClick={() => toggle(seat._id)}
                       className={cx(
-                        "w-12 h-12 rounded-md font-semibold transition active:scale-[0.98]",
-                        "focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-300",
+                        "w-8 h-8 sm:w-10 sm:h-10 rounded border text-xs font-semibold transition-all duration-200",
+                        "flex items-center justify-center cursor-pointer",
                         seatClass(seat)
                       )}
                       title={`${seat.number} • ${seat.type.toUpperCase()} • ${ticketPrices[seat.type].toLocaleString("vi-VN")}đ`}
@@ -175,16 +170,16 @@ export default function CinemaSeatPicker({
                 })}
               </div>
 
-              <span className="w-6 text-center font-bold text-gray-300">{row}</span>
+              <span className="w-5 text-center font-bold text-xs text-white/50">{row}</span>
             </div>
           );
         })}
       </div>
 
-      {/* chips */}
-      <div className="mt-5 flex flex-wrap gap-2">
+      {/* Selected Seat Chips */}
+      <div className="mt-6 pt-4 border-t border-[#2c2c2c] flex flex-wrap items-center gap-2">
         {selectedSeatIds.length === 0 ? (
-          <span className="text-sm text-white/55">Chọn ghế để tiếp tục…</span>
+          <span className="text-xs text-white/50 italic">Please pick seats on the chart above...</span>
         ) : (
           selectedSeatIds
             .map((id) => seats.find((s) => s._id === id))
@@ -192,11 +187,11 @@ export default function CinemaSeatPicker({
             .map((s) => (
               <span
                 key={(s as SeatApi)._id}
-                className="inline-flex items-center gap-2 rounded-full bg-emerald-400/15 border border-emerald-400/25 px-3 py-1 text-sm text-emerald-100"
+                className="inline-flex items-center gap-2 rounded bg-[#ff2424]/15 border border-[#ff2424]/40 px-3 py-1 text-xs text-white"
               >
-                <span className="font-semibold">{(s as SeatApi).number}</span>
-                <span className="text-emerald-200/80">•</span>
-                <span className="text-emerald-200/90">
+                <span className="font-bold text-[#ff2424]">{(s as SeatApi).number}</span>
+                <span className="text-white/40">•</span>
+                <span className="text-white/80">
                   {ticketPrices[(s as SeatApi).type].toLocaleString("vi-VN")}đ
                 </span>
               </span>
@@ -206,3 +201,4 @@ export default function CinemaSeatPicker({
     </div>
   );
 }
+

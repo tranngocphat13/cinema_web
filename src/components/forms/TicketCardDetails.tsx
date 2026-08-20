@@ -1,6 +1,7 @@
 "use client";
 
 import jsPDF from "jspdf";
+import { Ticket as TicketIcon, Download } from "lucide-react";
 
 type Ticket = {
   _id: string;
@@ -53,7 +54,7 @@ export default function TicketDetailCard({ ticket }: { ticket: Ticket }) {
     const doc = new jsPDF();
 
     doc.setFontSize(18);
-    doc.text("CINEMA TICKET", 20, 18);
+    doc.text("MULTIPLEX CINEMA TICKET", 20, 18);
 
     doc.setFontSize(12);
     doc.text(`Ticket ID: ${ticket._id}`, 20, 32);
@@ -67,63 +68,63 @@ export default function TicketDetailCard({ ticket }: { ticket: Ticket }) {
       doc.text(`Total: ${ticket.total.toLocaleString()}đ`, 20, 104);
     }
 
-    doc.save(`ticket-${ticket._id}.pdf`);
+    doc.save(`multiplex-ticket-${ticket._id}.pdf`);
   };
 
   return (
-    <div className="relative w-full max-w-[380px] rounded-2xl border border-white/15 bg-white/5 p-6 backdrop-blur-md
-                    shadow-[0_0_0_1px_rgba(255,255,255,0.06)]">
-      <div className="pointer-events-none absolute inset-0 rounded-2xl opacity-60
-                      [background:radial-gradient(120%_80%_at_50%_0%,rgba(16,185,129,0.25),transparent_70%)]" />
+    <div className="relative w-full max-w-[420px] rounded-xl border border-[#2c2c2c] bg-[#1a1a1a] p-6 sm:p-8 backdrop-blur-md shadow-2xl">
+      <div className="flex items-center justify-between pb-4 border-b border-[#2c2c2c] mb-6">
+        <div className="flex items-center gap-2">
+          <TicketIcon size={18} className="text-[#ff2424]" />
+          <span className="text-xs uppercase font-bold tracking-widest text-white">E-TICKET DETAILS</span>
+        </div>
+        <span className="text-[11px] font-mono text-[#ff2424] bg-[#ff2424]/10 border border-[#ff2424]/30 px-2 py-0.5 rounded">
+          {ticket.status?.toUpperCase() || "CONFIRMED"}
+        </span>
+      </div>
 
-      <div className="relative">
-        {/* Date */}
-        <div className="text-gray-300 text-sm">Date</div>
-        <div className="text-white text-xl font-semibold mt-1">{dateText}</div>
-
-        {/* Movie title */}
-        <div className="text-gray-300 text-sm mt-6">Movie Title</div>
-        <div className="text-white text-base font-extrabold tracking-wide mt-1 line-clamp-2">
-          {title}
+      <div className="relative space-y-4">
+        <div>
+          <div className="text-xs uppercase tracking-wider text-white/50">Movie Title</div>
+          <div className="text-white text-xl font-black tracking-tight mt-1">{title}</div>
         </div>
 
-        {/* Ticket + Hours */}
-        <div className="mt-6 flex items-end justify-between gap-6">
+        <div className="grid grid-cols-2 gap-4 text-xs pt-2 border-t border-[#2c2c2c]/50">
           <div>
-            <div className="flex items-center gap-2 text-gray-300 text-sm">
-              <span>Ticket</span>
-              <span className="text-white/90">({seatList.length || 0})</span>
-            </div>
-            <div className="text-white font-semibold mt-1">{seatText}</div>
+            <span className="text-white/50 uppercase tracking-wider">Date</span>
+            <p className="text-white font-bold mt-0.5 text-sm">{dateText}</p>
           </div>
-
           <div className="text-right">
-            <div className="text-gray-300 text-sm">Hours</div>
-            <div className="text-white text-lg font-bold mt-1">{timeText}</div>
+            <span className="text-white/50 uppercase tracking-wider">Time</span>
+            <p className="text-white font-bold mt-0.5 text-sm font-mono">{timeText}</p>
           </div>
         </div>
 
-        {/* Extra detail (vẫn cùng style) */}
-        <div className="mt-6 space-y-3 text-sm">
+        <div className="space-y-2.5 text-xs pt-3 border-t border-[#2c2c2c]/50">
           <div className="flex justify-between gap-4">
-            <span className="text-gray-300">Ticket ID</span>
-            <span className="text-white font-mono text-right break-all">{ticket._id}</span>
+            <span className="text-white/50 uppercase tracking-wider">Ticket ID:</span>
+            <span className="text-white/90 font-mono text-right break-all">{ticket._id}</span>
           </div>
 
           <div className="flex justify-between gap-4">
-            <span className="text-gray-300">Cinema</span>
-            <span className="text-white font-semibold text-right">{cinemaName}</span>
+            <span className="text-white/50 uppercase tracking-wider">Cinema:</span>
+            <span className="text-white font-bold text-right">{cinemaName}</span>
           </div>
 
           <div className="flex justify-between gap-4">
-            <span className="text-gray-300">Room</span>
+            <span className="text-white/50 uppercase tracking-wider">Room:</span>
             <span className="text-white font-semibold">{roomName}</span>
           </div>
 
+          <div className="flex justify-between gap-4">
+            <span className="text-white/50 uppercase tracking-wider">Seats ({seatList.length}):</span>
+            <span className="text-[#ff2424] font-black text-sm">{seatText}</span>
+          </div>
+
           {typeof ticket.total === "number" && (
-            <div className="flex justify-between gap-4">
-              <span className="text-gray-300">Total</span>
-              <span className="text-white font-bold">{ticket.total.toLocaleString()}đ</span>
+            <div className="flex justify-between gap-4 pt-3 border-t border-[#2c2c2c]">
+              <span className="text-white/70 uppercase font-bold">Total:</span>
+              <span className="text-white font-black text-base text-[#ff2424]">{ticket.total.toLocaleString("vi-VN")}đ</span>
             </div>
           )}
         </div>
@@ -131,12 +132,13 @@ export default function TicketDetailCard({ ticket }: { ticket: Ticket }) {
         {/* Button */}
         <button
           onClick={handleDownload}
-          className="mt-6 w-full rounded-xl bg-emerald-400 py-3 font-semibold text-black
-                     hover:bg-emerald-300 active:scale-[0.99] transition"
+          className="mt-6 w-full rounded bg-[#ff2424] hover:bg-[#e01e1e] py-3 font-bold uppercase tracking-wider text-white text-xs sm:text-sm transition shadow-[0_0_15px_rgba(255,36,36,0.3)] flex items-center justify-center gap-2"
         >
-          Download Ticket
+          <Download size={16} />
+          <span>Download PDF Ticket</span>
         </button>
       </div>
     </div>
   );
 }
+

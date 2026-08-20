@@ -81,6 +81,10 @@ export async function getMovieVideos(id, language = "vi-VN") {
   return fetchJson(`/movie/${id}/videos`, { language });
 }
 
+export async function getMovieCredits(id, language = "vi-VN") {
+  return fetchJson(`/movie/${id}/credits`, { language });
+}
+
 // Lấy phân loại (rating) Việt Nam nếu có (VD: C13/C16/C18…)
 export async function getVNReleaseCertification(id) {
   const data = await fetchJson(`/movie/${id}/release_dates`);
