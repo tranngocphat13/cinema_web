@@ -32,7 +32,7 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
   }, []);
 
   return (
-    <div className="min-h-screen bg-gray-100 flex">
+    <div className="min-h-screen bg-gray-100 flex text-gray-900">
       {/* Sidebar */}
       <aside
         className={`fixed top-0 left-0 h-full w-64 bg-gray-900 text-white p-4 flex flex-col transform 
@@ -88,7 +88,7 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
       {/* Nội dung chính */}
       <div className="flex-1 flex flex-col lg:ml-64">
         {/* Header */}
-        <header className="bg-white border-b px-4 py-3 flex justify-between items-center shadow-sm">
+        <header className="bg-white border-b px-4 py-3 flex justify-between items-center shadow-sm text-gray-900">
           <div className="flex items-center gap-3">
             <button
               onClick={() => setSidebarOpen(!sidebarOpen)}
@@ -96,10 +96,10 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
             >
               ☰
             </button>
-            <h1 className="text-xl font-semibold">Trang Quản Trị</h1>
+            <h1 className="text-xl font-semibold text-gray-900">Trang Quản Trị</h1>
           </div>
 
-          <div className="text-xl font-medium">
+          <div className="text-xl font-medium text-gray-700">
             Xin chào,{" "}
             <span className="font-semibold text-blue-600">
               {session?.user?.name}
@@ -108,7 +108,7 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
         </header>
 
         {/* Main */}
-        <main className="p-6 flex-1">{children}</main>
+        <main className="p-6 flex-1 text-gray-900">{children}</main>
       </div>
     </div>
   );

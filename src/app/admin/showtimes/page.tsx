@@ -192,26 +192,26 @@ export default function AdminShowtimesPage() {
   };
 
   return (
-    <div className="p-6 space-y-4">
-      <h1 className="text-2xl font-bold">🎬 Quản lý suất chiếu</h1>
+    <div className="p-6 space-y-6 text-gray-900">
+      <h1 className="text-2xl font-bold text-gray-900">🎬 Quản lý suất chiếu</h1>
 
       {/* Form thêm/sửa */}
-      <div className="space-y-3 border p-4 rounded bg-gray-50">
-        <h2 className="font-semibold">
+      <div className="space-y-4 border border-gray-200 p-5 rounded-xl bg-white shadow-sm text-gray-900">
+        <h2 className="font-semibold text-lg text-gray-900 border-b pb-2">
           {editingId ? "✏️ Sửa suất chiếu" : "➕ Thêm suất chiếu"}
         </h2>
 
         {/* Chọn phim */}
         <div>
-          <label className="block mb-1">Phim</label>
+          <label className="block mb-1 text-sm font-medium text-gray-700">Phim</label>
           <select
             value={selectedMovie}
             onChange={(e) => setSelectedMovie(e.target.value)}
-            className="border p-2 rounded w-full"
+            className="border border-gray-300 p-2.5 rounded-lg w-full bg-white text-gray-900 focus:ring-2 focus:ring-blue-500 focus:outline-none"
           >
-            <option value="">-- Chọn phim --</option>
+            <option value="" className="text-gray-500">-- Chọn phim --</option>
             {movies.map((m) => (
-              <option key={m._id} value={m._id}>
+              <option key={m._id} value={m._id} className="text-gray-900">
                 {m.title} ({m.runtime} phút)
               </option>
             ))}
@@ -220,15 +220,15 @@ export default function AdminShowtimesPage() {
 
         {/* Chọn rạp */}
         <div>
-          <label className="block mb-1">Rạp</label>
+          <label className="block mb-1 text-sm font-medium text-gray-700">Rạp</label>
           <select
             value={selectedCinema}
             onChange={(e) => setSelectedCinema(e.target.value)}
-            className="border p-2 rounded w-full"
+            className="border border-gray-300 p-2.5 rounded-lg w-full bg-white text-gray-900 focus:ring-2 focus:ring-blue-500 focus:outline-none"
           >
-            <option value="">-- Chọn rạp --</option>
+            <option value="" className="text-gray-500">-- Chọn rạp --</option>
             {cinemas.map((c) => (
-              <option key={c._id} value={c._id}>
+              <option key={c._id} value={c._id} className="text-gray-900">
                 {c.name}
               </option>
             ))}
@@ -237,48 +237,52 @@ export default function AdminShowtimesPage() {
 
         {/* Chọn giờ bắt đầu */}
         <div>
-          <label className="block mb-1">Giờ bắt đầu</label>
+          <label className="block mb-1 text-sm font-medium text-gray-700">Giờ bắt đầu</label>
           <input
             type="datetime-local"
             value={startTime}
             onChange={(e) => setStartTime(e.target.value)}
-            className="border p-2 rounded w-full"
+            className="border border-gray-300 p-2.5 rounded-lg w-full bg-white text-gray-900 focus:ring-2 focus:ring-blue-500 focus:outline-none"
           />
         </div>
 
         {/* Giờ kết thúc */}
         {endTime && (
           <div>
-            <label className="block mb-1">Giờ kết thúc</label>
+            <label className="block mb-1 text-sm font-medium text-gray-700">Giờ kết thúc</label>
             <input
               type="datetime-local"
               value={endTime}
               readOnly
-              className="border p-2 rounded w-full bg-gray-100"
+              className="border border-gray-300 p-2.5 rounded-lg w-full bg-gray-100 text-gray-700 cursor-not-allowed"
             />
           </div>
         )}
 
         {/* Kiểm tra phòng */}
-        <Button
-          onClick={fetchAvailableRooms}
-          disabled={!selectedCinema || !endTime}
-        >
-          Kiểm tra phòng trống
-        </Button>
+        <div>
+          <Button
+            type="button"
+            onClick={fetchAvailableRooms}
+            disabled={!selectedCinema || !endTime}
+            className="bg-blue-600 hover:bg-blue-700 text-white font-medium"
+          >
+            Kiểm tra phòng trống
+          </Button>
+        </div>
 
         {/* Chọn phòng */}
         {rooms.length > 0 && (
           <div>
-            <label className="block mb-1">Phòng</label>
+            <label className="block mb-1 text-sm font-medium text-gray-700">Phòng</label>
             <select
               value={selectedRoom}
               onChange={(e) => setSelectedRoom(e.target.value)}
-              className="border p-2 rounded w-full"
+              className="border border-gray-300 p-2.5 rounded-lg w-full bg-white text-gray-900 focus:ring-2 focus:ring-blue-500 focus:outline-none"
             >
-              <option value="">-- Chọn phòng --</option>
+              <option value="" className="text-gray-500">-- Chọn phòng --</option>
               {rooms.map((r) => (
-                <option key={r._id} value={r._id}>
+                <option key={r._id} value={r._id} className="text-gray-900">
                   {r.name}
                 </option>
               ))}
@@ -287,12 +291,12 @@ export default function AdminShowtimesPage() {
         )}
 
         {/* Nút hành động */}
-        <div className="flex gap-2">
-          <Button onClick={handleSaveShowtime}>
+        <div className="flex gap-2 pt-2">
+          <Button onClick={handleSaveShowtime} className="bg-blue-600 hover:bg-blue-700 text-white">
             {editingId ? "Cập nhật" : "Tạo suất chiếu"}
           </Button>
           {editingId && (
-            <Button variant="outline" onClick={resetForm}>
+            <Button variant="outline" onClick={resetForm} className="border-gray-300 text-gray-700 hover:bg-gray-100">
               Hủy
             </Button>
           )}
@@ -300,31 +304,37 @@ export default function AdminShowtimesPage() {
       </div>
 
       {/* Danh sách suất chiếu */}
-      <div>
-        <h2 className="text-xl font-semibold">📅 Danh sách suất chiếu</h2>
+      <div className="space-y-3">
+        <h2 className="text-xl font-semibold text-gray-900">📅 Danh sách suất chiếu</h2>
         {showtimes.length === 0 ? (
-          <p className="text-gray-500">Chưa có suất chiếu nào</p>
+          <p className="text-gray-500 italic bg-white p-4 rounded-lg border border-gray-200">Chưa có suất chiếu nào</p>
         ) : (
-          <ul className="space-y-2 mt-2">
+          <ul className="space-y-3">
             {showtimes.map((s) => (
               <li
                 key={s._id}
-                className="border p-3 rounded shadow-sm bg-white flex justify-between items-center"
+                className="border border-gray-200 p-4 rounded-xl shadow-sm bg-white flex justify-between items-center text-gray-900 hover:border-gray-300 transition-colors"
               >
-                <div>
-                  🎥 <strong>{s.movie?.title || "N/A"}</strong> <br />
-                  🏢 {s.cinema?.name || "N/A"} - {s.room?.name || "N/A"} <br />
-                  🕒{" "}
-                  {s.startTime
-                    ? new Date(s.startTime).toLocaleString()
-                    : "N/A"}{" "}
-                  → {s.endTime ? new Date(s.endTime).toLocaleString() : "N/A"}
+                <div className="space-y-1 text-sm">
+                  <div className="text-base font-bold text-gray-900">
+                    🎥 {s.movie?.title || "N/A"}
+                  </div>
+                  <div className="text-gray-600 font-medium">
+                    🏢 {s.cinema?.name || "N/A"} — <span className="text-blue-600 font-semibold">{s.room?.name || "N/A"}</span>
+                  </div>
+                  <div className="text-gray-500 text-xs">
+                    🕒 {s.startTime ? new Date(s.startTime).toLocaleString("vi-VN") : "N/A"}{" "}
+                    → {s.endTime ? new Date(s.endTime).toLocaleString("vi-VN") : "N/A"}
+                  </div>
                 </div>
                 <div className="flex gap-2">
-                  <Button onClick={() => handleEdit(s)}>Sửa</Button>
+                  <Button onClick={() => handleEdit(s)} className="bg-blue-600 hover:bg-blue-700 text-white text-sm">
+                    Sửa
+                  </Button>
                   <Button
                     variant="destructive"
                     onClick={() => handleDelete(s._id)}
+                    className="bg-red-600 hover:bg-red-700 text-white text-sm"
                   >
                     Xóa
                   </Button>

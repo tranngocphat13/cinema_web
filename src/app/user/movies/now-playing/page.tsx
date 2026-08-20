@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import useSWR from "swr";
 import Link from "next/link";
 import Image from "next/image";
-import { Ticket, Star, ChevronRight, ChevronLeft, Info } from "lucide-react";
+import { Ticket, Star, ChevronRight, ChevronLeft, Info, Play, X, Film } from "lucide-react";
 import { useI18n } from "@/components/i18n/i18nProvider";
 
 interface Movie {
@@ -17,6 +17,7 @@ interface Movie {
   releaseDate?: string;
   posterUrl?: string;
   backdropUrl?: string;
+  trailerUrl?: string;
   overview?: string;
   genres?: string[];
   runtime?: number;
@@ -44,9 +45,19 @@ function getHighResTMDBUrl(url?: string): string {
   return url.replace(/\/t\/p\/(w\d+|w780|w500|w300|w1280)\//, "/t/p/original/");
 }
 
+function getEmbedUrl(url?: string): string | null {
+  if (!url) return null;
+  const ytMatch = url.match(/(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=))([\w-]{11})/);
+  if (ytMatch && ytMatch[1]) {
+    return `https://www.youtube-nocookie.com/embed/${ytMatch[1]}?autoplay=1&rel=0`;
+  }
+  return url;
+}
+
 export default function NowPlayingPage() {
   const { t, lang } = useI18n();
   const [heroIndex, setHeroIndex] = useState(0);
+  const [activeTrailer, setActiveTrailer] = useState<{ url: string; title: string } | null>(null);
 
   const apiUrl = `/api/movies/now-playing?status=now_playing&lang=${lang}`;
   const { data, error } = useSWR<Movie[]>(apiUrl, fetcher);
@@ -160,31 +171,34 @@ export default function NowPlayingPage() {
               </p>
             )}
 
-            {/* Quick Showtime Chips */}
-            <div className="flex flex-wrap gap-2 my-2">
-              {["16:50", "18:05", "19:00", "21:45"].map((time) => (
-                <Link
-                  key={time}
-                  href={`/user/movies/${heroMovie._id ?? heroMovie.tmdbId}`}
-                  className="bg-[#1a1a1a] text-white/90 hover:bg-[#ff2424] hover:text-white transition-colors border border-[#2c2c2c] px-3.5 py-1.5 rounded text-xs font-semibold"
-                >
-                  {time}
-                </Link>
-              ))}
-            </div>
-
             {/* Action Buttons */}
-            <div className="flex items-center gap-3 mt-2">
+            <div className="flex flex-wrap items-center gap-3 mt-3">
               <Link
-                href={`/user/movies/${heroMovie._id ?? heroMovie.tmdbId}`}
+                href={`/user/movies/${heroMovie.tmdbId || heroMovie._id}`}
                 className="bg-[#ff2424] hover:bg-[#e01e1e] text-white font-bold px-7 py-3.5 rounded text-sm uppercase tracking-wider transition-colors shadow-[0_0_20px_rgba(255,36,36,0.4)] flex items-center gap-2"
               >
                 <Ticket size={18} />
                 {t("movies.book")}
               </Link>
 
+              {heroMovie.trailerUrl && (
+                <button
+                  type="button"
+                  onClick={() =>
+                    setActiveTrailer({
+                      url: heroMovie.trailerUrl || "",
+                      title: heroMovie.title,
+                    })
+                  }
+                  className="border border-[#2c2c2c] bg-[#1a1a1a]/90 hover:bg-[#ff2424] hover:border-[#ff2424] text-white font-semibold px-6 py-3.5 rounded text-sm transition-all flex items-center gap-2 shadow-lg"
+                >
+                  <Play size={16} className="fill-current" />
+                  {t("movies.trailer")}
+                </button>
+              )}
+
               <Link
-                href={`/user/movies/${heroMovie._id ?? heroMovie.tmdbId}`}
+                href={`/user/movies/${heroMovie.tmdbId || heroMovie._id}`}
                 className="border border-[#2c2c2c] bg-[#1a1a1a]/80 hover:bg-white/10 text-white font-medium px-5 py-3.5 rounded text-sm transition-colors flex items-center gap-1.5"
               >
                 <Info size={16} className="opacity-80" />
@@ -288,16 +302,29 @@ export default function NowPlayingPage() {
                       <Star size={12} className="opacity-40" />
                     </div>
 
-                    {/* Showtimes & CTA */}
+                    {/* Trailer Button & CTA */}
                     <div className="flex items-center justify-between gap-2 mt-2 pt-2 border-t border-white/10">
-                      <div className="flex gap-1.5">
-                        <span className="bg-[#121414]/90 text-white/80 border border-[#2c2c2c] px-2 py-0.5 rounded text-[11px] font-mono">
-                          16:50
+                      {movie.trailerUrl ? (
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            setActiveTrailer({
+                              url: movie.trailerUrl || "",
+                              title: movie.title,
+                            });
+                          }}
+                          className="flex items-center gap-1.5 bg-[#121414]/90 hover:bg-[#ff2424] text-white/90 hover:text-white border border-[#2c2c2c] hover:border-[#ff2424] px-2.5 py-1 rounded text-xs font-semibold transition-all shadow-sm group/btn"
+                        >
+                          <Play size={12} className="fill-current text-[#ff2424] group-hover/btn:text-white transition-colors" />
+                          <span>{t("movies.trailer")}</span>
+                        </button>
+                      ) : (
+                        <span className="text-[11px] text-white/40 italic flex items-center gap-1">
+                          <Film size={12} /> IMAX
                         </span>
-                        <span className="bg-[#121414]/90 text-white/80 border border-[#2c2c2c] px-2 py-0.5 rounded text-[11px] font-mono">
-                          19:00
-                        </span>
-                      </div>
+                      )}
 
                       <span className="text-xs font-bold text-[#ff2424] flex items-center group-hover:translate-x-1 transition-transform uppercase tracking-wider">
                         {t("movies.book")} <ChevronRight size={14} />
@@ -310,7 +337,55 @@ export default function NowPlayingPage() {
           </div>
         )}
       </div>
+
+      {/* Trailer Modal */}
+      {activeTrailer && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/85 backdrop-blur-md p-4 animate-fade-in"
+          onClick={() => setActiveTrailer(null)}
+        >
+          <div
+            className="relative w-full max-w-4xl bg-[#121414] border border-[#2c2c2c] rounded-2xl overflow-hidden shadow-[0_0_50px_rgba(0,0,0,0.8)]"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Modal Header */}
+            <div className="flex items-center justify-between px-6 py-4 border-b border-[#2c2c2c] bg-[#1a1a1a]">
+              <div className="flex items-center gap-2">
+                <Play size={18} className="text-[#ff2424] fill-[#ff2424]" />
+                <h3 className="font-bold text-white text-base truncate max-w-md">
+                  {activeTrailer.title} — Trailer
+                </h3>
+              </div>
+              <button
+                onClick={() => setActiveTrailer(null)}
+                className="w-8 h-8 rounded-full bg-white/10 hover:bg-[#ff2424] text-white flex items-center justify-center transition-colors"
+                aria-label="Close trailer"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            {/* Video Player */}
+            <div className="relative aspect-video w-full bg-black">
+              {getEmbedUrl(activeTrailer.url) ? (
+                <iframe
+                  src={getEmbedUrl(activeTrailer.url) || ""}
+                  title={activeTrailer.title}
+                  className="w-full h-full border-0"
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                  allowFullScreen
+                />
+              ) : (
+                <div className="flex items-center justify-center h-full text-white/50 text-sm">
+                  Trailer không khả dụng
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
+
 

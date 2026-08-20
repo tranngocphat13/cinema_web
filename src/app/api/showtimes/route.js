@@ -100,7 +100,42 @@ export async function POST(req) {
 
     // Tính giờ kết thúc = startTime + runtime phim
     const start = new Date(startTime);
-    const end = new Date(start.getTime() + movie.runtime * 60000);
+    if (isNaN(start.getTime())) {
+      return new Response(JSON.stringify({ error: "Thời gian bắt đầu không hợp lệ" }), {
+        status: 400,
+        headers: { "Content-Type": "application/json" },
+      });
+    }
+    const runtime = movie.runtime && movie.runtime > 0 ? movie.runtime : 120;
+    const end = new Date(start.getTime() + runtime * 60000);
+
+    // 🛡️ Kiểm tra xung đột phòng chiếu (+10 phút dọn vệ sinh)
+    const CLEANING_BUFFER_MS = 10 * 60 * 1000;
+    const startBuffer = new Date(start.getTime() - CLEANING_BUFFER_MS);
+    const endBuffer = new Date(end.getTime() + CLEANING_BUFFER_MS);
+
+    const conflictingShowtime = await Showtime.findOne({
+      room: roomId,
+      startTime: { $lt: endBuffer },
+      endTime: { $gt: startBuffer },
+    }).populate("movie");
+
+    if (conflictingShowtime) {
+      const confStart = new Date(conflictingShowtime.startTime).toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" });
+      const confEnd = new Date(conflictingShowtime.endTime).toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" });
+      const cleanEnd = new Date(conflictingShowtime.endTime.getTime() + CLEANING_BUFFER_MS).toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" });
+      const movieTitle = conflictingShowtime.movie?.title || "khác";
+
+      return new Response(
+        JSON.stringify({
+          error: `Phòng này đã có suất chiếu phim "${movieTitle}" từ ${confStart} đến ${confEnd} (cộng 10 phút dọn phòng đến ${cleanEnd}). Vui lòng chọn giờ hoặc phòng khác.`,
+        }),
+        {
+          status: 409,
+          headers: { "Content-Type": "application/json" },
+        }
+      );
+    }
 
     const newShowtime = await Showtime.create({
       movie: movieId,

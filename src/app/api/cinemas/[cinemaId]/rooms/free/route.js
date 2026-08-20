@@ -20,12 +20,15 @@ export async function POST(req, { params }) {
     // Lấy tất cả phòng của rạp đó
     const rooms = await Room.find({ cinema: cinemaId });
 
-    // Lấy tất cả suất chiếu trong cùng khung giờ
+    // 🛡️ Lấy tất cả suất chiếu trong cùng khung giờ (+10 phút dọn vệ sinh)
+    const CLEANING_BUFFER_MS = 10 * 60 * 1000;
+    const startBuffer = new Date(new Date(startTime).getTime() - CLEANING_BUFFER_MS);
+    const endBuffer = new Date(new Date(endTime).getTime() + CLEANING_BUFFER_MS);
+
     const showtimes = await Showtime.find({
       room: { $in: rooms.map((r) => r._id) },
-      $or: [
-        { startTime: { $lt: endTime }, endTime: { $gt: startTime } } // có overlap thời gian
-      ]
+      startTime: { $lt: endBuffer },
+      endTime: { $gt: startBuffer },
     });
 
     // Tìm các phòng đã có suất chiếu
